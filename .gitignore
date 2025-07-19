@@ -191,6 +191,7 @@ sync.log
 *.temp
 .tmp
 dummy
+requirements.txt
 
 # Calendar files (these might be generated/updated frequently)
 *.ics

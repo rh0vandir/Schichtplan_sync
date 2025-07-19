@@ -89,6 +89,6 @@ fi
 tail -n 1000 "$LOG_FILE" > "$LOG_FILE.tmp" && mv "$LOG_FILE.tmp" "$LOG_FILE"
 
 # Run the Python script in its own environment
-"$SCRIPT_DIR/venv_schichtplan_sync/bin/python" "$SCRIPT_DIR/schichtplan_sync.py" --no-mail 2>&1 | add_timestamp | tee -a "$LOG_FILE"
+"$SCRIPT_DIR/venv_schichtplan_sync/bin/python" "$SCRIPT_DIR/schichtplan_sync.py" 2>&1 | add_timestamp | tee -a "$LOG_FILE"
 
 echo "Sync of Schichtplan completed successfully" | add_timestamp | tee -a "$LOG_FILE"

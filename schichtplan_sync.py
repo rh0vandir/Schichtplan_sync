@@ -3,7 +3,7 @@
 # MIT License
 # Copyright (c) 2025 Andras Gerendas
 # Created: 2024-03-19
-# Version: 4.19
+# Version: 4.20.0
 
 import pdfplumber
 import logging
@@ -20,10 +20,8 @@ from icalendar import Calendar, Event, Component
 import pytz
 from ftplib import FTP
 import json
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 import hashlib
+from utils.mail_utils import send_mail
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
@@ -260,7 +258,9 @@ def create_ical_file(dates, shifts, name, family=False):
                 cal.add_component(event)
     
     # Save calendar to file with proper line endings
-    ical_file = f"schichtplan_{name.replace(' ', '_')}.ics"
+    calendars_dir = "calendars"
+    os.makedirs(calendars_dir, exist_ok=True)
+    ical_file = os.path.join(calendars_dir, f"schichtplan_{name.replace(' ', '_')}.ics")
     ical_content = cal.to_ical().decode('utf-8').replace('\r\n', '\n').replace('\n', '\r\n')
     with open(ical_file, 'wb') as f:
         f.write(ical_content.encode('utf-8'))
@@ -506,107 +506,7 @@ def load_config():
 SHIFTS = None
 USERS = None
 
-def send_mail(recipient_email, user_name, changes=None):
-    """Send email notification about schedule changes"""
-    try:
-        # Get SMTP credentials from encrypted file or prompt user
-        credentials_file = os.path.expanduser('~/.schichtplan_smtp_credentials')
-        key_file = os.path.expanduser('~/.schichtplan_smtp_key')
-        
-        # Try to load existing credentials
-        if os.path.exists(credentials_file) and os.path.exists(key_file):
-            try:
-                with open(key_file, 'rb') as f:
-                    key = f.read()
-                fernet = Fernet(key)
-                
-                with open(credentials_file, 'rb') as f:
-                    encrypted_data = f.read()
-                decrypted_data = fernet.decrypt(encrypted_data)
-                smtp_host, smtp_port, smtp_user, smtp_pass = decrypted_data.decode().split(':')
-            except Exception as e:
-                print(f"Error reading SMTP credentials: {e}")
-                return False
-        else:
-            # If no credentials file or error, prompt user
-            print("Bitte gebe deine SMTP Zugangsdaten ein:")
-            smtp_host = input("SMTP Host: ")
-            smtp_port = input("SMTP Port: ")
-            smtp_user = input("SMTP Nutzername: ")
-            smtp_pass = getpass("SMTP Passwort: ")
-            
-            # Save credentials
-            try:
-                # Generate new key if needed
-                if not os.path.exists(key_file):
-                    key = Fernet.generate_key()
-                    with open(key_file, 'wb') as f:
-                        f.write(key)
-                else:
-                    with open(key_file, 'rb') as f:
-                        key = f.read()
-                
-                fernet = Fernet(key)
-                data = f"{smtp_host}:{smtp_port}:{smtp_user}:{smtp_pass}"
-                encrypted_data = fernet.encrypt(data.encode())
-                
-                with open(credentials_file, 'wb') as f:
-                    f.write(encrypted_data)
-                
-                # Set secure permissions
-                os.chmod(credentials_file, 0o600)
-                os.chmod(key_file, 0o600)
-                
-            except Exception as e:
-                print(f"Warning: Could not save SMTP credentials: {e}")
-        
-        # Create message
-        msg = MIMEMultipart()
-        msg['From'] = smtp_user
-        msg['To'] = recipient_email
-        msg['Subject'] = "Schichtplan Update"
-        
-        # Create email body with changes
-        body = f"Hallo {user_name},\n\nDein Schichtplan wurde aktualisiert."
-        if changes:
-            body += "\n\nFolgende Änderungen wurden vorgenommen:\n"
-            for change in changes:
-                body += f"- {change}\n"
-        body += "\nDie Änderungen werden demnächst in deinen Kalender übernommen."
-        
-        msg.attach(MIMEText(body, 'plain'))
-        
-        # Configure SSL context
-        import ssl
-        context = ssl.create_default_context()
-        
-        # Send email with timeout
-        try:
-            with smtplib.SMTP(smtp_host, int(smtp_port), timeout=30) as server:
-                server.set_debuglevel(0)  # disable debug output
-                server.starttls(context=context)
-                server.login(smtp_user, smtp_pass)
-                server.send_message(msg)
-                
-            print(f"Email notification sent to {recipient_email}")
-            return True
-            
-        except smtplib.SMTPException as e:
-            print(f"SMTP error: {e}")
-            return False
-        except ssl.SSLError as e:
-            print(f"SSL error: {e}")
-            return False
-        except TimeoutError as e:
-            print(f"Connection timeout: {e}")
-            return False
-        except Exception as e:
-            print(f"Unexpected error: {e}")
-            return False
-        
-    except Exception as e:
-        print(f"Error in send_mail: {e}")
-        return False
+
 
 def compare_pdf_content(new_pdf_content):
     """Compare new PDF content with previous PDF content using hash"""
@@ -685,6 +585,14 @@ if __name__ == "__main__":
         # Single name processing
         name = args.name.strip()
         print(f"Processing schedule for: {name} {'(with family mode)' if args.family else ''}")
+        
+        # Find the user's email from config
+        user_email = None
+        for user_name, family, mail in USERS:
+            if user_name == name:
+                user_email = mail
+                break
+        
         ical_file = extract_and_create_ical(pdf_content, name, args.family)
         if ical_file and not args.no_ftp:
             old_file = os.path.join(os.path.dirname(ical_file), f"old_{os.path.basename(ical_file)}")
@@ -694,8 +602,8 @@ if __name__ == "__main__":
                     logging.info(f"Changes for {name}:")
                     for change in changes:
                         logging.info(f"  {change}")
-                if upload_to_ftp(ical_file) and USERS[0][2] and args.mail:
-                    send_mail(USERS[0][2], name, changes)
+                if upload_to_ftp(ical_file) and user_email and args.mail:
+                    send_mail(user_email, name, changes)
     else:
         # Process all users from config
         if not USERS:

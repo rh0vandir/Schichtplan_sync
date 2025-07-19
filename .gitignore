@@ -193,10 +193,6 @@ sync.log
 dummy
 requirements.txt
 
-# Calendar files (these might be generated/updated frequently)
-*.ics
-old_*.ics
-
 # Backup files
 *.bak
 *.backup

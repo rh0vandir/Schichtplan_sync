@@ -1,0 +1,3 @@
+# Calendar files (these might be generated/updated frequently)
+*.ics
+old_*.ics

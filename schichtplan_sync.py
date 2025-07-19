@@ -3,7 +3,7 @@
 # MIT License
 # Copyright (c) 2025 Andras Gerendas
 # Created: 2024-03-19
-# Version: 4.18
+# Version: 4.19
 
 import pdfplumber
 import logging
@@ -24,6 +24,9 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import hashlib
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
 # Configure logging to suppress warnings
 logging.getLogger('pdfplumber').setLevel(logging.ERROR)
@@ -391,6 +394,7 @@ def compare_ics_files(new_file, old_file):
     """Compare two ICS files and return a list of changes"""
     changes = []
     if not os.path.exists(old_file):
+        changes.append("Initial calendar creation - all shifts added")
         return changes, True  # If no old file exists, consider it changed
         
     # Read both files

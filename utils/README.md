@@ -1,143 +1,161 @@
-# Mail Utility for Schichtplan Sync
+# Utils Package for Schichtplan Sync
 
-This document describes the new mail utility functionality that has been extracted from the main `schichtplan_sync.py` script.
+This document describes the utility modules that provide modular functionality for the Schichtplan Sync project.
 
 ## Overview
 
-The `utils/mail_utils.py` script provides a standalone email notification system that can be used by:
+The `utils/` package contains specialized modules that handle different aspects of the schedule synchronization process:
+
+- **Mail Utilities**: Email notification system with encrypted credentials
+- **PDF Processing**: PDF download, parsing, and text extraction
+- **Calendar Generation**: iCal file creation and management
+- **FTP Operations**: File upload and comparison functionality
+- **Credential Management**: Secure storage and retrieval of login credentials
+- **Configuration Loading**: JSON configuration parsing and validation
+- **Schedule Extension**: Automatic schedule continuation using patterns
+- **Year Tracking**: Proper handling of year boundary transitions
+
+## Module Overview
+
+### `mail_utils.py`
+Provides a standalone email notification system that can be used by:
 - The main `schichtplan_sync.py` script for schedule change notifications
 - The `cron_schichtplan.sh` script for system notifications
 - Any other script that needs to send email notifications
 
-## Features
+**Features:**
+- Encrypted SMTP credentials using Fernet encryption
+- Flexible email types (schedule updates and custom notifications)
+- Command-line interface and Python module usage
+- Comprehensive error handling with detailed logging
 
-- **Encrypted SMTP credentials**: Credentials are stored securely using Fernet encryption
-- **Flexible email types**: Supports both schedule updates and custom notifications
-- **Command-line interface**: Can be used directly from the command line
-- **Python module**: Can be imported and used in other Python scripts
-- **Error handling**: Comprehensive error handling with detailed logging
+### `pdf_processor.py`
+Handles PDF download, processing, and text extraction:
+- Downloads PDFs from configured URLs with authentication
+- Extracts text content using OCR (Tesseract)
+- Processes extracted text to identify shift patterns
+- Integrates with calendar generation system
+
+### `calendar_generator.py`
+Creates and manages iCalendar files:
+- Generates standard iCal format files
+- Handles shift definitions and time calculations
+- Supports schedule extension and pattern repetition
+- Manages event creation and calendar structure
+
+### `ftp_uploader.py`
+Manages FTP server operations:
+- Uploads generated iCal files to configured FTP servers
+- Compares current and previous files for change detection
+- Handles FTP authentication and error management
+- Supports secure FTP connections
+
+### `credentials_manager.py`
+Securely manages login credentials:
+- Encrypts and stores credentials using Fernet
+- Manages both web login and FTP credentials
+- Provides secure credential retrieval
+- Handles credential file permissions and security
+
+### `config_loader.py`
+Loads and validates configuration:
+- Parses JSON configuration files
+- Validates shift definitions and user configurations
+- Provides default values and error handling
+- Manages configuration file loading and validation
+
+### `shift_continuation.py`
+Handles schedule extension functionality:
+- Extends schedules using configurable patterns
+- Manages pattern repetition and continuation
+- Handles year boundary transitions
+- Supports custom extension periods
+
+### `year_tracker.py`
+Manages year boundary transitions:
+- Handles schedules that cross year boundaries
+- Manages date calculations and transitions
+- Ensures proper calendar continuity
+- Supports leap year handling
 
 ## Usage
 
-### As a Python Module
+### As Python Modules
 
 ```python
-from mail_utils import send_mail, send_notification_email
+from utils.mail_utils import send_mail, send_notification_email
+from utils.pdf_processor import extract_and_create_ical
+from utils.ftp_uploader import upload_to_ftp, compare_ics_files
+from utils.config_loader import load_config
+from utils.credentials_manager import get_credentials
 
-# Send a schedule update email
-success = send_mail(
-    recipient_email="user@example.com",
-    user_name="John Doe",
-    changes=["New shift added: F 08-16 on 2024-12-25"],
-    subject="Schedule Update"
-)
+# Load configuration
+SHIFTS, USERS = load_config()
 
-# Send a simple notification email
-success = send_notification_email(
-    recipient_email="admin@example.com",
-    subject="System Alert",
-    message="The system has encountered an error."
-)
+# Process PDF and create calendar
+ical_file = extract_and_create_ical(pdf_content, name, SHIFTS, family_mode, extend, extend_days)
+
+# Upload to FTP and check for changes
+if upload_to_ftp(ical_file):
+    changes, has_changes = compare_ics_files(ical_file, old_file)
+    if has_changes and changes:
+        send_mail(user_email, name, changes)
 ```
 
 ### From Command Line
 
 ```bash
-# Send a schedule update email
+# Send email notification
 python3 utils/mail_utils.py --to user@example.com --name "John Doe" \
     --changes "New shift added: F 08-16 on 2024-12-25" \
     --subject "Schedule Update"
 
-# Send a custom notification email
-python3 utils/mail_utils.py --to admin@example.com \
-    --subject "System Alert" \
-    --message "The system has encountered an error."
-```
-
-### In Shell Scripts
-
-```bash
-# Send notification from cron script
-/root/schichtplan_sync/venv_schichtplan_sync/bin/python /root/schichtplan_sync/utils/mail_utils.py \
-    --to "admin@example.com" \
-    --subject "Cron Job Failed" \
-    --message "The scheduled job has failed."
+# Test mail functionality
+python3 utils/test_mail.py
 ```
 
 ## Configuration
 
 ### First-time Setup
 
-When you first use the mail utility, it will prompt you for SMTP credentials:
+When you first use modules that require credentials:
 
-1. **SMTP Host**: Your SMTP server address (e.g., `smtp.gmail.com`)
-2. **SMTP Port**: SMTP port (usually 587 for TLS or 465 for SSL)
-3. **SMTP Username**: Your email username
-4. **SMTP Password**: Your email password
+1. **Web Login Credentials**: Stored in `~/.schichtplan_credentials`
+2. **FTP Credentials**: Stored in `~/.schichtplan_ftp_credentials`
+3. **SMTP Credentials**: Stored in `~/.schichtplan_smtp_credentials`
 
-The credentials are encrypted and stored in:
-- `~/.schichtplan_smtp_credentials` (encrypted credentials)
-- `~/.schichtplan_smtp_key` (encryption key)
+All credential files are encrypted using Fernet encryption with keys stored in:
+- `~/.schichtplan_key` (main encryption key)
+- `~/.schichtplan_ftp_key` (FTP encryption key)
+- `~/.schichtplan_smtp_key` (SMTP encryption key)
 
 ### Security
 
-- Credentials are encrypted using Fernet (symmetric encryption)
+- All credentials are encrypted using Fernet (symmetric encryption)
 - Files have restricted permissions (600)
 - No credentials are stored in plain text
+- Encryption keys are stored separately from encrypted data
 
-## Functions
-
-### `send_mail(recipient_email, user_name, changes=None, subject=None, custom_body=None)`
-
-Sends an email notification about schedule changes.
-
-**Parameters:**
-- `recipient_email` (str): Email address of the recipient
-- `user_name` (str): Name of the user (for personalization)
-- `changes` (list, optional): List of schedule changes
-- `subject` (str, optional): Email subject (default: "Schichtplan Update")
-- `custom_body` (str, optional): Custom message body (overrides default format)
-
-**Returns:**
-- `bool`: True if email was sent successfully, False otherwise
-
-### `send_notification_email(recipient_email, subject, message)`
-
-Sends a simple notification email.
-
-**Parameters:**
-- `recipient_email` (str): Email address of the recipient
-- `subject` (str): Email subject
-- `message` (str): Email message body
-
-**Returns:**
-- `bool`: True if email was sent successfully, False otherwise
-
-### `get_smtp_credentials()`
-
-Gets SMTP credentials from encrypted storage or prompts user.
-
-**Returns:**
-- `tuple`: (host, port, username, password) or (None, None, None, None) if failed
-
-## Integration with Existing Scripts
+## Integration
 
 ### Main Script (`schichtplan_sync.py`)
 
-The main script now imports the mail utility:
+The main script imports and uses all utility modules:
 
 ```python
-from mail_utils import send_mail
+from utils.mail_utils import send_mail
+from utils.pdf_processor import extract_and_create_ical
+from utils.ftp_uploader import upload_to_ftp, compare_ics_files
+from utils.config_loader import load_config
+from utils.credentials_manager import get_credentials
 ```
-
-The existing mail functionality remains the same, but now uses the external module.
 
 ### Cron Script (`cron_schichtplan.sh`)
 
-The cron script now uses the Python mail utility instead of the system `mail` command:
+The cron script uses the Python mail utility for notifications:
 
 ```bash
-/root/schichtplan_sync/venv_schichtplan_sync/bin/python /root/schichtplan_sync/mail_utils.py \
+"$SCRIPT_DIR/venv_schichtplan_sync/bin/python" "$SCRIPT_DIR/utils/mail_utils.py" \
     --to "$recipient" \
     --subject "$subject" \
     --message "$message"
@@ -145,15 +163,27 @@ The cron script now uses the Python mail utility instead of the system `mail` co
 
 ## Error Handling
 
-The mail utility includes comprehensive error handling:
+All utility modules include comprehensive error handling:
 
-- **SMTP errors**: Connection, authentication, and sending errors
-- **SSL errors**: TLS/SSL configuration issues
-- **Timeout errors**: Network timeout issues
+- **Network errors**: Connection, timeout, and authentication issues
+- **File errors**: Permission, path, and I/O problems
+- **Configuration errors**: Missing or invalid configuration data
 - **Credential errors**: Missing or invalid credentials
-- **File permission errors**: Issues with credential storage
+- **Processing errors**: PDF parsing and calendar generation issues
 
 All errors are logged with descriptive messages to help with troubleshooting.
+
+## Dependencies
+
+The utility modules require the following Python packages:
+- `cryptography` (for credential encryption)
+- `requests` (for HTTP operations)
+- `pdfplumber` (for PDF processing)
+- `icalendar` (for calendar generation)
+- `pytz` (for timezone handling)
+- Standard library modules: `smtplib`, `ssl`, `email`, `os`, `argparse`, `json`
+
+These are already included in the main project's virtual environment and requirements.txt.
 
 ## Testing
 
@@ -165,10 +195,20 @@ python3 utils/test_mail.py
 
 Note: Tests will fail without valid SMTP credentials and email addresses.
 
-## Dependencies
+## Module Dependencies
 
-The mail utility requires the following Python packages:
-- `cryptography` (for credential encryption)
-- Standard library modules: `smtplib`, `ssl`, `email`, `os`, `argparse`
+```
+utils/
+├── __init__.py              # Package initialization and exports
+├── mail_utils.py            # Email functionality (standalone)
+├── pdf_processor.py         # PDF processing (depends on config_loader)
+├── calendar_generator.py    # Calendar generation (depends on config_loader)
+├── ftp_uploader.py          # FTP operations (depends on credentials_manager)
+├── credentials_manager.py   # Credential management (standalone)
+├── config_loader.py         # Configuration loading (standalone)
+├── shift_continuation.py    # Schedule extension (depends on config_loader)
+├── year_tracker.py          # Year handling (standalone)
+└── test_mail.py             # Mail utility testing
+```
 
-These are already included in the main project's virtual environment. 
+Each module is designed to be as independent as possible while providing clear interfaces for integration. 

@@ -46,6 +46,12 @@
             "name": "Frei"
         }
     },
+    "default_pattern": [
+        "N", "N", "N", "N", "N", "WF", "WF",
+        "A", "A", "A", "A", "A", "F", "F",
+        "B", "B", "B", "B", "B", "WS", "WS",
+        "F", "F", "F", "F", "F", "F", "F"
+    ],
     "users": {
         "user1": {
             "name": "Sven Kunze",

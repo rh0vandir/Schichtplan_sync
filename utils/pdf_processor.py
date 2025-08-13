@@ -63,11 +63,34 @@ def extract_and_create_ical(pdf_content: bytes, name: str, shifts_config: dict,
                                 date_match = re.search(r'\d{2}\.\d{2}', cell)
                                 if date_match:
                                     date = date_match.group(0)
-                                    dates.append(date)
+                                    
+                                    # Get the corresponding shift
+                                    shift = ''
                                     if col_idx < len(next_row):
-                                        shifts.append(next_row[col_idx])
-                                    else:
-                                        shifts.append('')
+                                        shift = next_row[col_idx].strip()
+                                    
+                                    # Only add the date/shift pair if we have a valid shift
+                                    if shift and shift != '':
+                                        dates.append(date)
+                                        shifts.append(shift)
+        
+        # Clean up any remaining empty shifts (safety check)
+        cleaned_dates = []
+        cleaned_shifts = []
+        empty_shift_count = 0
+        for date, shift in zip(dates, shifts):
+            if shift and shift.strip():
+                cleaned_dates.append(date)
+                cleaned_shifts.append(shift.strip())
+            else:
+                empty_shift_count += 1
+        
+        if empty_shift_count > 0:
+            print(f"Cleaned up {empty_shift_count} dates with empty shifts")
+        
+        dates, shifts = cleaned_dates, cleaned_shifts
+        
+        print(f"Extracted {len(dates)} valid date/shift pairs from PDF")
         
         # Create year mapping for the extracted dates
         year_mapping = {}

@@ -1,6 +1,12 @@
-# Utils package for Schichtplan Sync
-# Contains utility modules for email notifications and other helper functions
+# Utils package for schichtplan_sync
+from .mail_utils import send_mail
+from .config_loader import load_config, get_default_pattern
+from .credentials_manager import get_credentials, get_ftp_credentials
 
-from .mail_utils import send_mail, send_notification_email, get_smtp_credentials
-
-__all__ = ['send_mail', 'send_notification_email', 'get_smtp_credentials'] 
+__all__ = [
+    'send_mail',
+    'load_config',
+    'get_default_pattern',
+    'get_credentials',
+    'get_ftp_credentials'
+] 

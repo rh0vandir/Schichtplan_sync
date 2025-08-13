@@ -84,8 +84,13 @@ def extend_shift_schedule(dates: List[str], shifts: List[str],
         print("Warning: Could not determine rhythm position, starting from beginning of pattern")
         rhythm_position = 0
     
-    print(f"PDF schedule ends at rhythm position {rhythm_position} (shift: {last_shift})")
-    print(f"Continuing rhythm from position {rhythm_position + 1}")
+    # Check if we're near the end of the pattern and need to wrap around
+    # If we're within 7 positions of the end, it's better to start from the beginning
+    if rhythm_position >= pattern_length - 7:
+        print(f"Note: PDF ends near pattern end (position {rhythm_position}), wrapping to beginning for clean week alignment")
+        rhythm_position = -1  # This will make the next position 0
+    
+    print(f"Extending schedule: PDF ends at rhythm position {rhythm_position}, continuing from position {(rhythm_position + 1) % pattern_length}")
     
     # Extend the schedule
     extended_dates = dates.copy()
@@ -118,10 +123,110 @@ def extend_shift_schedule(dates: List[str], shifts: List[str],
     else:
         print(f"All dates in year: {transition_info.get('year_range', [0])[0]}")
     
-    print(f"Extended schedule from {len(dates)} to {len(extended_dates)} days")
-    print(f"Pattern continues from position {rhythm_position + 1} and repeats {(days_to_add // pattern_length) + 1} times")
+    # Validate the extended schedule follows the correct pattern
+    validate_extended_schedule(extended_shifts, default_pattern, rhythm_position)
+    
+    print(f"Schedule extended: {len(dates)} → {len(extended_dates)} days")
     
     return extended_dates, extended_shifts, year_mapping
+
+def validate_extended_schedule(extended_shifts: List[str], pattern: List[str], start_position: int):
+    """
+    Validate that the extended schedule correctly follows the 28-day pattern
+    
+    Args:
+        extended_shifts: The complete extended schedule
+        pattern: The 28-day default pattern
+        start_position: Where in the pattern the extension started
+    """
+    pattern_length = len(pattern)
+    
+    # Get the expected first week pattern from the config
+    expected_first_week = pattern[:7]
+    
+    # Get the actual first week of the extension
+    actual_first_week = []
+    for i in range(7):
+        pos = (start_position + 1 + i) % pattern_length
+        actual_first_week.append(pattern[pos])
+    
+    # Validate all shift types in the first week
+    shift_validation = {}
+    has_errors = False
+    
+    for shift_type in set(expected_first_week):  # Get unique shift types from expected first week
+        expected_count = expected_first_week.count(shift_type)
+        actual_count = actual_first_week.count(shift_type)
+        if expected_count != actual_count:
+            has_errors = True
+        shift_validation[shift_type] = {
+            'expected': expected_count,
+            'actual': actual_count,
+            'status': '✓' if expected_count == actual_count else '✗'
+        }
+    
+    # Only show validation results if there are errors
+    if has_errors:
+        print(f"⚠ Extension validation - Pattern mismatch detected:")
+        print(f"  Expected: {expected_first_week}")
+        print(f"  Actual:   {actual_first_week}")
+        print(f"  Starting from pattern position: {start_position + 1}")
+        
+        for shift_type, counts in shift_validation.items():
+            if counts['expected'] > 0 and counts['actual'] != counts['expected']:
+                print(f"    ✗ {shift_type}: {counts['actual']}/{counts['expected']} (MISSING {counts['expected'] - counts['actual']})")
+    
+    # Check for errors in subsequent weeks
+    weeks_to_check = min(4, (len(extended_shifts) - len(pattern)) // 7)  # Check up to 4 weeks
+    week_errors = []
+    
+    for week in range(weeks_to_check):
+        week_start = start_position + 1 + (week * 7)
+        week_shifts = []
+        for i in range(7):
+            pos = (week_start + i) % pattern_length
+            week_shifts.append(pattern[pos])
+        
+        # Get expected pattern for this week
+        expected_week = pattern[week*7:(week+1)*7]
+        
+        # Count all shift types for this week
+        week_validation = {}
+        week_has_errors = False
+        
+        for shift_type in set(expected_week):
+            expected_count = expected_week.count(shift_type)
+            actual_count = week_shifts.count(shift_type)
+            if expected_count != actual_count:
+                week_has_errors = True
+            week_validation[shift_type] = {
+                'expected': expected_count,
+                'actual': actual_count,
+                'status': '✓' if expected_count == actual_count else '✗'
+            }
+        
+        if week_has_errors:
+            total_week_expected = sum(counts['expected'] for counts in week_validation.values())
+            total_week_actual = sum(counts['actual'] for counts in week_validation.values())
+            week_errors.append({
+                'week': week + 1,
+                'expected': total_week_expected,
+                'actual': total_week_actual,
+                'details': week_validation
+            })
+    
+    # Only show week validation if there are errors
+    if week_errors:
+        print(f"⚠ Pattern continuation errors:")
+        for week_error in week_errors:
+            print(f"  Week {week_error['week']}: {week_error['actual']}/{week_error['expected']} shifts correct")
+            for shift_type, counts in week_error['details'].items():
+                if counts['expected'] > 0 and counts['actual'] != counts['expected']:
+                    print(f"    {shift_type}: {counts['actual']}/{counts['expected']} (MISSING {counts['expected'] - counts['actual']})")
+    
+    # Only show success message if there were no errors
+    if not has_errors and not week_errors:
+        print(f"✓ Extension validation: Pattern correctly aligned")
 
 def find_rhythm_position(shifts: List[str], pattern: List[str]) -> Optional[int]:
     """
@@ -134,30 +239,77 @@ def find_rhythm_position(shifts: List[str], pattern: List[str]) -> Optional[int]
     Returns:
         Position in the pattern (0-27) where the PDF ends, or None if can't determine
     """
-    if len(shifts) < len(pattern):
-        # If PDF is shorter than pattern, we can't reliably determine position
-        # In this case, we'll try to find the best match
+    if not shifts or not pattern:
+        return 0
+    
+    # Filter out any empty or invalid shifts
+    valid_shifts = [shift for shift in shifts if shift and shift.strip()]
+    if not valid_shifts:
+        print("Warning: No valid shifts found in PDF data")
+        return 0
+    
+    if len(valid_shifts) != len(shifts):
+        print(f"Filtered out {len(shifts) - len(valid_shifts)} empty/invalid shifts")
+        shifts = valid_shifts
+    
+    pattern_length = len(pattern)
+    
+    # If PDF is shorter than pattern, we need to find the best match
+    if len(shifts) < pattern_length:
         return find_best_pattern_match(shifts, pattern)
     
     # If PDF is longer than pattern, find the last complete pattern cycle
+    # and determine where we are in the current incomplete cycle
+    complete_cycles = len(shifts) // pattern_length
+    remaining_shifts = len(shifts) % pattern_length
+    
+    if remaining_shifts == 0:
+        # We end exactly at the end of a complete cycle
+        return 0
+    
+    # We have some remaining shifts that form a partial cycle
+    # Find where this partial cycle starts in the pattern
+    partial_cycle_start = find_partial_cycle_start(shifts[-remaining_shifts:], pattern)
+    
+    if partial_cycle_start is not None:
+        # Calculate where we end in the pattern
+        end_position = (partial_cycle_start + remaining_shifts) % pattern_length
+        return end_position
+    
+    # Fallback to best pattern match for the remaining shifts
+    return find_best_pattern_match(shifts[-remaining_shifts:], pattern)
+
+def find_partial_cycle_start(partial_shifts: List[str], pattern: List[str]) -> Optional[int]:
+    """
+    Find where a partial cycle of shifts starts in the pattern
+    
+    Args:
+        partial_shifts: List of shifts that form a partial cycle
+        pattern: The complete pattern
+    
+    Returns:
+        Position in the pattern where the partial cycle starts, or None if can't determine
+    """
+    if not partial_shifts or not pattern:
+        return None
+    
     pattern_length = len(pattern)
-    last_complete_cycle = len(shifts) // pattern_length
+    partial_length = len(partial_shifts)
     
-    if last_complete_cycle > 0:
-        # Check if the last complete cycle matches the pattern
-        start_idx = (last_complete_cycle - 1) * pattern_length
-        end_idx = last_complete_cycle * pattern_length
+    # Try each possible starting position in the pattern
+    for start_pos in range(pattern_length):
+        # Check if the partial shifts match the pattern starting from this position
+        matches = 0
+        for i, shift in enumerate(partial_shifts):
+            pattern_pos = (start_pos + i) % pattern_length
+            if shift == pattern[pattern_pos]:
+                matches += 1
         
-        if shifts[start_idx:end_idx] == pattern:
-            # We found a complete cycle, so we're at position 0
-            return 0
-        
-        # Check if we're in the middle of a pattern
-        remaining_shifts = shifts[start_idx:]
-        return find_best_pattern_match(remaining_shifts, pattern)
+        # If we have a good match (at least 80% of shifts match)
+        if matches >= partial_length * 0.8:
+            return start_pos
     
-    # PDF is shorter than pattern, find best match
-    return find_best_pattern_match(shifts, pattern)
+    return None
 
 def find_best_pattern_match(shifts: List[str], pattern: List[str]) -> Optional[int]:
     """
@@ -192,21 +344,16 @@ def find_best_pattern_match(shifts: List[str], pattern: List[str]) -> Optional[i
     # Calculate where we end in the pattern
     end_position = (best_match + len(shifts)) % pattern_length
     
-    print(f"Best pattern match: starts at position {best_match}, ends at position {end_position}")
-    print(f"Match score: {best_score}/{len(shifts)} shifts match the pattern")
-    
     # Additional validation: check if the transition makes sense
     if len(shifts) > 0:
         last_shift = shifts[-1]
         expected_next = pattern[end_position]
-        print(f"Last shift in PDF: {last_shift}")
-        print(f"Expected next shift in rhythm: {expected_next}")
         
         # If we have a good match, verify the transition point
         if best_score >= len(shifts) * 0.8:  # 80% match threshold
-            print(f"✓ Good rhythm match confirmed, continuing from position {end_position}")
+            print(f"Pattern match: {best_score}/{len(shifts)} shifts match, continuing from position {end_position}")
         else:
-            print(f"⚠ Lower match score, rhythm continuation may not be perfect")
+            print(f"Warning: Low pattern match score ({best_score}/{len(shifts)}), rhythm continuation may not be perfect")
     
     return end_position
 

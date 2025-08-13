@@ -88,7 +88,7 @@ fi
 # Keep log file size manageable (keep last 1000 lines)
 tail -n 1000 "$LOG_FILE" > "$LOG_FILE.tmp" && mv "$LOG_FILE.tmp" "$LOG_FILE"
 
-# Run the Python script in its own environment
-"$SCRIPT_DIR/venv_schichtplan_sync/bin/python" "$SCRIPT_DIR/schichtplan_sync.py" 2>&1 | add_timestamp | tee -a "$LOG_FILE"
+# Run the Python script in its own environment with unbuffered output
+PYTHONUNBUFFERED=1 "$SCRIPT_DIR/venv_schichtplan_sync/bin/python" -u "$SCRIPT_DIR/schichtplan_sync.py" 2>&1 | add_timestamp | tee -a "$LOG_FILE"
 
 echo "Sync of Schichtplan completed successfully" | add_timestamp | tee -a "$LOG_FILE"

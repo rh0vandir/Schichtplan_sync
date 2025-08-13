@@ -12,7 +12,7 @@ import requests
 import hashlib
 from utils.mail_utils import send_mail
 from utils.pdf_processor import extract_and_create_ical
-from utils.ftp_uploader import upload_to_ftp
+from utils.ftp_uploader import upload_to_ftp, compare_ics_files
 from utils.config_loader import load_config
 from utils.credentials_manager import get_credentials
 
@@ -144,11 +144,11 @@ def main():
         )
         
         if ical_file and not args.no_ftp:
+            # Get changes for email notification BEFORE FTP upload
+            old_file = os.path.join(os.path.dirname(ical_file), f"old_{os.path.basename(ical_file)}")
+            changes, has_changes = compare_ics_files(ical_file, old_file)
+            
             if upload_to_ftp(ical_file) and user_email and args.mail:
-                # Get changes for email notification
-                old_file = os.path.join(os.path.dirname(ical_file), f"old_{os.path.basename(ical_file)}")
-                from utils.ftp_uploader import compare_ics_files
-                changes, has_changes = compare_ics_files(ical_file, old_file)
                 if has_changes and changes:
                     send_mail(user_email, name, changes)
     else:
@@ -170,11 +170,11 @@ def main():
             )
             
             if ical_file and not args.no_ftp:
+                # Get changes for email notification BEFORE FTP upload
+                old_file = os.path.join(os.path.dirname(ical_file), f"old_{os.path.basename(ical_file)}")
+                changes, has_changes = compare_ics_files(ical_file, old_file)
+                
                 if upload_to_ftp(ical_file) and mail and args.mail:
-                    # Get changes for email notification
-                    old_file = os.path.join(os.path.dirname(ical_file), f"old_{os.path.basename(ical_file)}")
-                    from utils.ftp_uploader import compare_ics_files
-                    changes, has_changes = compare_ics_files(ical_file, old_file)
                     if has_changes and changes:
                         send_mail(mail, name, changes)
         

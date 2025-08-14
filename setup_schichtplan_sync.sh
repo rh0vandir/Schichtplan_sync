@@ -100,8 +100,7 @@ if [ ! -f "$SCRIPT_DIR/schichtplan_sync.json" ]; then
         "WS": {"start": "12:00", "end": "24:00", "name": "Wochenende Spätschicht"},
         "K": {"start": "0:00", "end": "24:00", "name": "Krank"},
         "U": {"start": "0:00", "end": "24:00", "name": "Urlaub"},
-        "F": {"start": "0:00", "end": "24:00", "name": "Frei"},
-        "X": {"start": "0:00", "end": "24:00", "name": "Frei"}
+        "F": {"start": "0:00", "end": "24:00", "name": "Frei"}
     },
     "default_pattern": [
         "N", "N", "N", "N", "N", "WF", "WF",

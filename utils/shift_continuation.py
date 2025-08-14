@@ -90,7 +90,7 @@ def extend_shift_schedule(dates: List[str], shifts: List[str],
         print(f"Note: PDF ends near pattern end (position {rhythm_position}), wrapping to beginning for clean week alignment")
         rhythm_position = -1  # This will make the next position 0
     
-    print(f"Extending schedule: PDF ends at rhythm position {rhythm_position}, continuing from position {(rhythm_position + 1) % pattern_length}")
+    print(f"Extending schedule: PDF ends at rhythm position {rhythm_position}, continuing from position {rhythm_position}")
     
     # Extend the schedule
     extended_dates = dates.copy()
@@ -101,7 +101,7 @@ def extend_shift_schedule(dates: List[str], shifts: List[str],
     
     for i in range(days_to_add):
         # Get the shift from the pattern, continuing from where we left off
-        pattern_index = (rhythm_position + 1 + i) % pattern_length
+        pattern_index = (rhythm_position + i) % pattern_length
         shift = default_pattern[pattern_index]
         
         # Format the date with proper year handling
@@ -147,7 +147,7 @@ def validate_extended_schedule(extended_shifts: List[str], pattern: List[str], s
     # Get the actual first week of the extension
     actual_first_week = []
     for i in range(7):
-        pos = (start_position + 1 + i) % pattern_length
+        pos = (start_position + i) % pattern_length
         actual_first_week.append(pattern[pos])
     
     # Validate all shift types in the first week
@@ -170,7 +170,7 @@ def validate_extended_schedule(extended_shifts: List[str], pattern: List[str], s
         print(f"⚠ Extension validation - Pattern mismatch detected:")
         print(f"  Expected: {expected_first_week}")
         print(f"  Actual:   {actual_first_week}")
-        print(f"  Starting from pattern position: {start_position + 1}")
+        print(f"  Starting from pattern position: {start_position}")
         
         for shift_type, counts in shift_validation.items():
             if counts['expected'] > 0 and counts['actual'] != counts['expected']:
@@ -181,7 +181,7 @@ def validate_extended_schedule(extended_shifts: List[str], pattern: List[str], s
     week_errors = []
     
     for week in range(weeks_to_check):
-        week_start = start_position + 1 + (week * 7)
+        week_start = start_position + (week * 7)
         week_shifts = []
         for i in range(7):
             pos = (week_start + i) % pattern_length

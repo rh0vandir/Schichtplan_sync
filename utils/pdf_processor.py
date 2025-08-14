@@ -69,24 +69,34 @@ def extract_and_create_ical(pdf_content: bytes, name: str, shifts_config: dict,
                                     if col_idx < len(next_row):
                                         shift = next_row[col_idx].strip()
                                     
-                                    # Only add the date/shift pair if we have a valid shift
-                                    if shift and shift != '':
-                                        dates.append(date)
-                                        shifts.append(shift)
+                                    # Always add the date, treat empty shifts as free days
+                                    dates.append(date)
+                                    if shift and shift.strip():
+                                        shifts.append(shift.strip())
+                                    else:
+                                        shifts.append('F')  # Empty shift becomes free day
         
-        # Clean up any remaining empty shifts (safety check)
+        # Final cleanup: ensure all shifts are valid (should be rare now)
         cleaned_dates = []
         cleaned_shifts = []
-        empty_shift_count = 0
+        invalid_shift_count = 0
         for date, shift in zip(dates, shifts):
-            if shift and shift.strip():
+            if shift and shift.strip() and shift != 'F':
+                # Valid shift found
                 cleaned_dates.append(date)
                 cleaned_shifts.append(shift.strip())
+            elif shift == 'F':
+                # Free day - keep as is
+                cleaned_dates.append(date)
+                cleaned_shifts.append('F')
             else:
-                empty_shift_count += 1
+                # Fallback: treat as free day
+                cleaned_dates.append(date)
+                cleaned_shifts.append('F')
+                invalid_shift_count += 1
         
-        if empty_shift_count > 0:
-            print(f"Cleaned up {empty_shift_count} dates with empty shifts")
+        if invalid_shift_count > 0:
+            print(f"Converted {invalid_shift_count} invalid shifts to free days")
         
         dates, shifts = cleaned_dates, cleaned_shifts
         

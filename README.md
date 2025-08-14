@@ -57,7 +57,7 @@ Edit `schichtplan_sync.json` to configure:
         "K": {"start": "0:00", "end": "24:00", "name": "Krank"},
         "U": {"start": "0:00", "end": "24:00", "name": "Urlaub"},
         "F": {"start": "0:00", "end": "24:00", "name": "Frei"},
-        "X": {"start": "0:00", "end": "24:00", "name": "Frei"}
+
     }
 }
 ```

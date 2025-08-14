@@ -98,8 +98,14 @@ def create_ical_file(dates: List[str], shifts: List[str], name: str,
     
     cal.add_component(vtimezone)
     
+    # Count events for reporting
+    skipped_events = 0  # Free days (F)
+    created_events = 0  # Work shifts and PT (U)
+    
     for idx, (date, shift) in enumerate(zip(dates, shifts)):
-        if shift and shift != 'K':
+        # Skip creating events for free days (F)
+        # This keeps the calendar clean by only showing actual work shifts and holidays
+        if shift and shift != 'F':
             shift_info = get_shift_info(shift, shifts_config)
             if shift_info['start'] and shift_info['end']:
                 
@@ -148,15 +154,19 @@ def create_ical_file(dates: List[str], shifts: List[str], name: str,
                 # Create summary based on family flag
                 first_name = name.split()[0] if family else ''
                 prefix = f"{first_name} " if family else ""
-                if shift in ['F', 'K', 'X', 'U']:
-                    summary = f"{prefix}{shift}"
+                
+                # Handle different shift types
+                if shift == 'U':
+                    # PTO - use the shift name from config
+                    summary = f"{prefix}{shift_info['name']}"
                 else:
-                    # Extract just the hour part from the time
+                    # Work shift - show time range
                     start_hour = shift_info['start'].split(':')[0]
                     end_hour = shift_info['end'].split(':')[0]
                     # Remove numbers and "HO" from shift letter
                     shift_letter = ''.join(c for c in shift if not c.isdigit()).replace('HO', '')
                     summary = f"{prefix}{shift_letter} {start_hour}-{end_hour}"
+                
                 event.add('summary', summary)
                 
                 # Create description with Homeoffice info if present
@@ -177,6 +187,10 @@ def create_ical_file(dates: List[str], shifts: List[str], name: str,
                 event.add('all-day', False)
                 
                 cal.add_component(event)
+                created_events += 1
+        else:
+            if shift == 'F':
+                skipped_events += 1
     
     # Save calendar to file with proper line endings
     calendars_dir = "calendars"
@@ -185,6 +199,12 @@ def create_ical_file(dates: List[str], shifts: List[str], name: str,
     ical_content = cal.to_ical().decode('utf-8').replace('\r\n', '\n').replace('\n', '\r\n')
     with open(ical_file, 'wb') as f:
         f.write(ical_content.encode('utf-8'))
+    
+    # Report on what was created and what was skipped
+    if skipped_events > 0:
+        print(f"Calendar created: {created_events} work shifts and PT, skipped {skipped_events} free days")
+    else:
+        print(f"Calendar created: {created_events} work shifts and PT")
     
     print(f"iCal file created: {ical_file}")
     return ical_file

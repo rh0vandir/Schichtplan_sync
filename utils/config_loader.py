@@ -47,3 +47,20 @@ def get_default_pattern() -> Optional[List[str]]:
     except Exception as e:
         print(f"Error reading default pattern: {e}")
         return None
+
+def get_default_continuation_days() -> int:
+    """Get the default continuation days from configuration"""
+    config_file = Path(__file__).parent.parent / 'schichtplan_sync.json'
+    
+    if not config_file.exists():
+        return 365  # Default fallback
+        
+    try:
+        with open(config_file, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+        
+        return config.get('default_continuation_days', 365)
+        
+    except Exception as e:
+        print(f"Error reading default continuation days: {e}")
+        return 365  # Default fallback

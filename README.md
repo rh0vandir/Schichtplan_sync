@@ -74,6 +74,14 @@ Edit `schichtplan_sync.json` to configure:
 }
 ```
 
+### Default Continuation Length
+```json
+{
+    "default_continuation_days": 365
+}
+```
+This setting controls how many days the schedule is extended beyond the PDF data using the default pattern. The value represents the total number of days for continuation events.
+
 ### User Configurations
 ```json
 {
@@ -133,7 +141,7 @@ python3 schichtplan_sync.py --no-extend
 - `--force`: Force processing even if PDF has not changed
 - `--extend`: Enable schedule extension using default pattern (default)
 - `--no-extend`: Disable schedule extension
-- `--extend-days`: Number of days to extend schedule (default: 365)
+- `--extend-days`: Number of days to extend schedule (if not specified, uses config default_continuation_days value)
 
 ## Calendar Integration
 

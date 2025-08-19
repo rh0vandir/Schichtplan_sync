@@ -63,6 +63,7 @@ Loads and validates configuration:
 - Validates shift definitions and user configurations
 - Provides default values and error handling
 - Manages configuration file loading and validation
+- Loads default continuation length from configuration
 
 ### `shift_continuation.py`
 Handles schedule extension functionality:
@@ -70,6 +71,7 @@ Handles schedule extension functionality:
 - Manages pattern repetition and continuation
 - Handles year boundary transitions
 - Supports custom extension periods
+- Uses configurable default continuation length
 
 ### `year_tracker.py`
 Manages year boundary transitions:
@@ -77,6 +79,7 @@ Manages year boundary transitions:
 - Manages date calculations and transitions
 - Ensures proper calendar continuity
 - Supports leap year handling
+- Uses configurable default continuation length for year mapping
 
 ## Usage
 
@@ -115,6 +118,35 @@ python3 utils/test_mail.py
 ```
 
 ## Configuration
+
+### Configuration Options
+
+The utility modules support several configuration options that can be set in `schichtplan_sync.json`:
+
+#### Default Continuation Length
+```json
+{
+    "default_continuation_days": 365
+}
+```
+This setting controls how many days the schedule is extended beyond the PDF data. All utility modules that handle schedule extension will use this value as their default.
+
+#### Shift Definitions
+```json
+{
+    "shifts": {
+        "A": {"start": "07:00", "end": "14:00", "name": "Frühschicht"},
+        "B": {"start": "14:00", "end": "24:00", "name": "Spätschicht"}
+    }
+}
+```
+
+#### Default Pattern
+```json
+{
+    "default_pattern": ["N", "N", "N", "N", "N", "WF", "WF", "A", "A", "A", "A", "A", "F", "F"]
+}
+```
 
 ### First-time Setup
 

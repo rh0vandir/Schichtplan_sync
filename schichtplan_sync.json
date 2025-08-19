@@ -47,6 +47,7 @@
         "B", "B", "B", "B", "B", "WS", "WS",
         "F", "F", "F", "F", "F", "F", "F"
     ],
+    "default_continuation_days": 365,
     "users": {
         "user1": {
             "name": "Sven Kunze",

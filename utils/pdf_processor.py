@@ -114,6 +114,10 @@ def extract_and_create_ical(pdf_content: bytes, name: str, shifts_config: dict,
             date_range = f"{dates[0]} to {dates[-1]}"
             print(f"PDF dates: {date_range} → Years: {years_covered}")
         
+        # Store original PDF dates before any extension
+        original_pdf_dates = dates.copy()
+        original_pdf_shifts = shifts.copy()
+        
         # Extend schedule if requested
         if extend_schedule:
             # Get PDF title for year extraction
@@ -146,7 +150,8 @@ def extract_and_create_ical(pdf_content: bytes, name: str, shifts_config: dict,
             dates, shifts = extended_dates, extended_shifts
         
         # Create iCal file directly from extracted data with year mapping
-        return create_ical_file(dates, shifts, name, shifts_config, family, year_mapping)
+        # Pass original PDF dates to distinguish them from continuation dates
+        return create_ical_file(dates, shifts, name, shifts_config, family, year_mapping, original_pdf_dates)
         
     except Exception as e:
         print(f"Error processing PDF: {e}")

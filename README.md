@@ -25,7 +25,7 @@ A Python-based tool for automatically downloading, parsing, and syncing work sch
 
 1. **Clone the repository:**
    ```bash
-   git clone <your-gitlab-repo-url>
+   git clone git@code.rhovandir.net:all-inkl/schichtplan_sync.git
    cd schichtplan_sync
    ```
 

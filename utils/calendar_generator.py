@@ -7,6 +7,7 @@ import pytz
 import os
 from typing import List, Dict
 from .year_tracker import YearTracker
+from .config_loader import get_default_continuation_days
 
 def get_shift_info(shift: str, shifts_config: Dict) -> Dict[str, str]:
     """Get the time and name for a given shift code"""
@@ -57,7 +58,8 @@ def parse_shift_time(shift_code: str) -> tuple:
 def create_ical_file(dates: List[str], shifts: List[str], name: str, 
                     shifts_config: Dict, family: bool = False, 
                     year_mapping: Dict[str, int] = None,
-                    pdf_dates: List[str] = None) -> str:
+                    pdf_dates: List[str] = None,
+                    default_continuation_days: int = get_default_continuation_days()) -> str:
     """
     Create an iCal file from the shift data
     
@@ -69,7 +71,9 @@ def create_ical_file(dates: List[str], shifts: List[str], name: str,
         family: Whether to include first name in event summary
         year_mapping: Dictionary mapping dates to years
         pdf_dates: List of dates that originated from the PDF (for X-FOO:bar comments)
+        default_continuation_days: Number of days for continuation (uses config default)
     """
+    
     cal = Calendar()
     cal.add('prodid', '-//Schichtplan Sync//')
     cal.add('version', '2.0')
@@ -290,8 +294,8 @@ def create_ical_file(dates: List[str], shifts: List[str], name: str,
         
         # Add continuation section with events
         if continuation_events:
-            # Calculate continuation days
-            continuation_days = len(dates) - len(pdf_dates) if pdf_dates else len(dates)
+            # Use the configured continuation days
+            continuation_days = default_continuation_days
             
             # Add continuation section start marker
             f.write(f"X-CONTINUATION-{continuation_days}:START\r\n")

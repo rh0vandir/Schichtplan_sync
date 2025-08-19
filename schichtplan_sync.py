@@ -70,8 +70,8 @@ def compare_pdf_content(new_pdf_content: bytes) -> bool:
 
 def main():
     parser = argparse.ArgumentParser(description='Convert PDF schedule to iCal with shift continuation')
-    parser.add_argument('--name', help='Name to search for in the schedule (optional, if not provided will read from config)')
-    parser.add_argument('--local', help='Path to a local PDF file for testing (optional)')
+    parser.add_argument('--name', metavar='STR', help='Name to search for in the schedule (optional, if not provided will read from config)')
+    parser.add_argument('--local', metavar='FILE', help='Path to a local PDF file for testing (optional)')
     parser.add_argument('--family', action='store_true', help='Include first name in event summary')
     parser.add_argument('--no-ftp', action='store_true', help='Skip FTP upload')
     parser.add_argument('--mail', action='store_true', help='Enable email notifications (default)')
@@ -79,7 +79,7 @@ def main():
     parser.add_argument('--force', action='store_true', help='Force processing even if PDF has not changed')
     parser.add_argument('--extend', action='store_true', help='Extend schedule using default pattern (default)')
     parser.add_argument('--no-extend', action='store_true', help='Disable schedule extension')
-    parser.add_argument('--extend-days', type=int, default=None, help='Number of days to extend schedule (if not specified, uses config default_continuation_days value)')
+    parser.add_argument('--extend-days', metavar='INT', type=int, default=None, help='Number of days to extend schedule (if not specified, uses config default_continuation_days value)')
     
     args = parser.parse_args()
     

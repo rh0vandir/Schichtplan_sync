@@ -2,23 +2,24 @@
 
 from datetime import datetime, timedelta
 from typing import List, Tuple, Dict, Optional
-from .config_loader import get_default_pattern
+from .config_loader import get_default_pattern, get_default_continuation_days
 from .year_tracker import YearTracker
 
 def extend_shift_schedule(dates: List[str], shifts: List[str], 
-                         extension_days: int = 365, pdf_title: str = "") -> Tuple[List[str], List[str], Dict[str, int]]:
+                         extension_days: int = get_default_continuation_days(), pdf_title: str = "") -> Tuple[List[str], List[str], Dict[str, int]]:
     """
     Extend the shift schedule using the default pattern, continuing from where the PDF ends
     
     Args:
         dates: List of dates in DD.MM format
         shifts: List of shift codes corresponding to dates
-        extension_days: Number of days to extend the schedule by (default: 365 for a year)
+        extension_days: Number of days to extend the schedule by (uses config default)
         pdf_title: Title of the PDF for year extraction
     
     Returns:
         Tuple of (extended_dates, extended_shifts, year_mapping)
     """
+    
     if not dates or not shifts:
         return dates, shifts
     

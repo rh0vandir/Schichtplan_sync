@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
-from datetime import datetime, date
-from typing import List, Dict, Tuple, Optional
+from datetime import datetime, date, timedelta
+from typing import List, Dict, Tuple, Optional, Any
 import re
+from .config_loader import get_default_continuation_days
 
 class YearTracker:
     """
@@ -199,17 +200,18 @@ class YearTracker:
             return date_str
     
     def extend_years_for_future_dates(self, dates: List[str], 
-                                    extension_days: int = 365) -> Dict[str, int]:
+                                    extension_days: int = get_default_continuation_days()) -> Dict[str, int]:
         """
         Extend year mapping for future dates when extending the schedule
         
         Args:
             dates: List of dates in DD.MM format
-            extension_days: Number of days to extend by
+            extension_days: Number of days to extend by (uses config default)
             
         Returns:
             Extended year mapping
         """
+        
         if not dates:
             return {}
         
@@ -223,7 +225,7 @@ class YearTracker:
         last_date = datetime.strptime(f"{last_date_str}.{last_year}", "%d.%m.%Y")
         
         # Extend year mapping for future dates
-        current_date = last_date + datetime.timedelta(days=1)
+        current_date = last_date + timedelta(days=1)
         
         for i in range(extension_days):
             date_str = current_date.strftime("%d.%m")
@@ -232,7 +234,7 @@ class YearTracker:
             if date_str not in self.year_mapping:
                 self.year_mapping[date_str] = year
             
-            current_date += datetime.timedelta(days=1)
+            current_date += timedelta(days=1)
         
         return self.year_mapping
     

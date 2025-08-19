@@ -79,7 +79,7 @@ def main():
     parser.add_argument('--force', action='store_true', help='Force processing even if PDF has not changed')
     parser.add_argument('--extend', action='store_true', help='Extend schedule using default pattern (default)')
     parser.add_argument('--no-extend', action='store_true', help='Disable schedule extension')
-    parser.add_argument('--extend-days', type=int, default=365, help='Number of days to extend schedule (default: 365)')
+    parser.add_argument('--extend-days', type=int, default=None, help='Number of days to extend schedule (if not specified, uses config default_continuation_days value)')
     
     args = parser.parse_args()
     
@@ -100,6 +100,8 @@ def main():
     if not SHIFTS:
         print("Failed to load configuration")
         exit(1)
+    
+
     
     if args.local:
         try:

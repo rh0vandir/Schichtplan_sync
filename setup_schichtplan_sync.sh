@@ -108,6 +108,7 @@ if [ ! -f "$SCRIPT_DIR/schichtplan_sync.json" ]; then
         "B", "B", "B", "B", "B", "WS", "WS",
         "F", "F", "F", "F", "F", "F", "F"
     ],
+    "default_continuation_days": 365,
     "users": {
         "user1": {
             "name": "Some Name",
@@ -133,6 +134,7 @@ echo -e "\n${BLACK_ON_YELLOW}Configuration:${NC}"
 echo -e "1. Edit ${BOLD}$SCRIPT_DIR/schichtplan_sync.json${NORMAL} to configure:"
 echo -e "   - Shift definitions (start/end times and names)"
 echo -e "   - Default pattern for schedule extension"
+echo -e "   - Default continuation length (days to extend schedule)"
 echo -e "   - User configurations (name, family mode, and email)"
 echo -e "2. Run the script to process the schedule"
 
@@ -168,24 +170,13 @@ echo -e "    - year_tracker.py (year boundary handling)"
 echo -e "  ${BOLD}$SCRIPT_DIR/schichtplan_sync.json${NORMAL}: Configuration file for shifts and users"
 echo -e "  ${BOLD}$SCRIPT_DIR/venv_schichtplan_sync/${NORMAL}: Python virtual environment"
 
-echo -e "\n${BLACK_ON_YELLOW}Additional Options:${NC}"
-echo -e "  --name: Override configuration and process schedule for specific name"
-echo -e "  --family: Include first name in event summary (only with --name)"
-echo -e "  --local: Use a local PDF file for testing"
-echo -e "  --no-ftp: Skip FTP upload"
-echo -e "  --mail: Enable email notifications (default)"
-echo -e "  --no-mail: Disable email notifications"
-echo -e "  --force: Force processing even if PDF has not changed"
-echo -e "  --extend: Enable schedule extension using default pattern (default)"
-echo -e "  --no-extend: Disable schedule extension"
-echo -e "  --extend-days: Number of days to extend schedule (default: 365)"
+echo -e "\n${BLACK_ON_YELLOW}Command Line Options:${NC}"
+echo -e "Run the script with --help to see all available options:"
+echo -e "  ${BOLD}\"$SCRIPT_DIR/venv_schichtplan_sync/bin/python\" \"$SCRIPT_DIR/schichtplan_sync.py\" --help${NORMAL}"
 
 echo -e "\n${BLACK_ON_YELLOW}Example Usage:${NC}"
-echo -e "  ${BOLD}\"$SCRIPT_DIR/venv_schichtplan_sync/bin/python\" \"$SCRIPT_DIR/schichtplan_sync.py\" --name 'John Doe' --family --local${NORMAL} (process schedule for John Doe with family mode and use local PDF file)"
-echo -e "  ${BOLD}\"$SCRIPT_DIR/venv_schichtplan_sync/bin/python\" \"$SCRIPT_DIR/schichtplan_sync.py\" --no-mail${NORMAL} (process schedule of configured users without email notifications)"
-echo -e "  ${BOLD}\"$SCRIPT_DIR/venv_schichtplan_sync/bin/python\" \"$SCRIPT_DIR/schichtplan_sync.py\" --force${NORMAL} (force processing even if PDF hasn't changed)"
-echo -e "  ${BOLD}\"$SCRIPT_DIR/venv_schichtplan_sync/bin/python\" \"$SCRIPT_DIR/schichtplan_sync.py\" --extend-days 180${NORMAL} (extend schedule for 180 days)"
-echo -e "  ${BOLD}\"$SCRIPT_DIR/venv_schichtplan_sync/bin/python\" \"$SCRIPT_DIR/utils/mail_utils.py\" --to 'user@example.com' --subject 'Test' --message 'Hello'${NORMAL} (send custom email notification)"
+echo -e "  ${BOLD}\"$SCRIPT_DIR/venv_schichtplan_sync/bin/python\" \"$SCRIPT_DIR/schichtplan_sync.py\" --help${NORMAL} (show all available options)"
+echo -e "  ${BOLD}\"$SCRIPT_DIR/venv_schichtplan_sync/bin/python\" \"$SCRIPT_DIR/utils/mail_utils.py\" --help${NORMAL} (show mail utility options)"
 
 echo -e "\n${BLACK_ON_YELLOW}Cron Job Setup:${NC}"
 echo -e "To set up automated execution, add to your crontab:"

@@ -6,11 +6,13 @@ import re
 from typing import List, Tuple, Optional
 from .calendar_generator import create_ical_file
 from .shift_continuation import extend_shift_schedule
+from .config_loader import get_default_continuation_days
 
 def extract_and_create_ical(pdf_content: bytes, name: str, shifts_config: dict, 
                           family: bool = False, extend_schedule: bool = True, 
-                          extension_days: int = 365) -> Optional[str]:
+                          extension_days: int = get_default_continuation_days()) -> Optional[str]:
     """Extract data from PDF and directly create iCal file"""
+    
     try:
         # Convert PDF content to file-like object
         pdf_file = io.BytesIO(pdf_content)
@@ -151,7 +153,7 @@ def extract_and_create_ical(pdf_content: bytes, name: str, shifts_config: dict,
         
         # Create iCal file directly from extracted data with year mapping
         # Pass original PDF dates to distinguish them from continuation dates
-        return create_ical_file(dates, shifts, name, shifts_config, family, year_mapping, original_pdf_dates)
+        return create_ical_file(dates, shifts, name, shifts_config, family, year_mapping, original_pdf_dates, extension_days)
         
     except Exception as e:
         print(f"Error processing PDF: {e}")

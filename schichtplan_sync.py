@@ -13,7 +13,7 @@ import hashlib
 from utils.mail_utils import send_mail
 from utils.pdf_processor import extract_and_create_ical
 from utils.ftp_uploader import upload_to_ftp, compare_ics_files
-from utils.config_loader import load_config
+from utils.config_loader import load_config, get_default_continuation_days
 from utils.credentials_manager import get_credentials
 
 # Configure logging
@@ -101,6 +101,9 @@ def main():
         print("Failed to load configuration")
         exit(1)
     
+    # Handle extend_days parameter - use config default if None
+    if args.extend_days is None:
+        args.extend_days = get_default_continuation_days()
 
     
     if args.local:

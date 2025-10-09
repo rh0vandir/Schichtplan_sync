@@ -67,7 +67,7 @@ else
     
     # Check if the error indicates manual intervention is needed
     # Common git error codes that require manual intervention:
-    # 1 = General error (often merge conflicts, authentication issues, etc.)
+    # 1 = General error (often merge conflicts, authentication issues, etc.) 
     # 128 = Authentication failed or repository not found
     if [ $RESULT -eq 1 ] || [ $RESULT -eq 128 ]; then
         ERROR_MESSAGE="Git sync failed with error code $RESULT. Manual intervention may be required for repository: $REPO_URL"

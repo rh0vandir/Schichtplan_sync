@@ -91,12 +91,14 @@ class YearTracker:
             # All other months use the base year
             return self.base_year
     
-    def map_dates_to_years(self, dates: List[str]) -> Dict[str, int]:
+    def map_dates_to_years(self, dates: List[str], pdf_title: str = "") -> Dict[str, int]:
         """
-        Map all dates to their correct years, handling year transitions
+        Map all dates to their correct years using PDF title as base year
+        with Dec->Jan transition logic
         
         Args:
             dates: List of dates in DD.MM format
+            pdf_title: PDF title to extract base year from
             
         Returns:
             Dictionary mapping dates to their correct years
@@ -106,66 +108,47 @@ class YearTracker:
         
         year_mapping = {}
         
-        # First pass: determine the starting year based on the first date and current context
-        first_date = dates[0]
-        try:
-            day, month = map(int, first_date.split('.'))
-            
-            # Start with current year, but adjust based on context
-            current_date = datetime.now()
-            start_year = current_date.year
-            
-            # If we're in December and the first date is also December,
-            # we're likely in the same year
-            # If we're in December and the first date is January,
-            # the January dates are likely next year
-            if current_date.month == 12:
-                if month == 1:
-                    # We're in December, January dates are next year
-                    start_year = current_date.year + 1
-                elif month == 12:
-                    # We're in December, December dates are current year
-                    start_year = current_date.year
-            elif current_date.month == 1:
-                if month == 12:
-                    # We're in January, December dates are previous year
-                    start_year = current_date.year - 1
-                else:
-                    # We're in January, other months are current year
-                    start_year = current_date.year
-            else:
-                # We're in the middle of the year (2-11)
-                if month == 12:
-                    # If PDF starts with December dates and we're in the middle of the year,
-                    # those December dates are likely from the previous year
-                    start_year = current_date.year - 1
-                elif month == 1:
-                    # If PDF starts with January dates and we're in the middle of the year,
-                    # those January dates are likely from the current year
-                    start_year = current_date.year
-                else:
-                    # For other months, use current year
-                    start_year = current_date.year
-                    
-        except (ValueError, IndexError):
-            start_year = datetime.now().year
+        # Extract base year from PDF title (e.g., "Schichtplan 2025" -> 2025)
+        base_year = None
+        if pdf_title:
+            year_match = re.search(r'(\d{4})', pdf_title)
+            if year_match:
+                base_year = int(year_match.group(1))
         
-        # Second pass: assign years based on chronological sequence
-        current_year = start_year
+        # Fallback to current year if no title year found
+        if not base_year:
+            base_year = datetime.now().year
+        
+        # Using PDF title year as base
+        
+        # Start with base year from title
+        current_year = base_year
         previous_month = None
+        transition_count = 0
         
         for date_str in dates:
             try:
                 day, month = map(int, date_str.split('.'))
-                month = int(month)
                 
-                # Check for year transition
-                if month == 1 and previous_month == 12:
-                    # December to January transition - increment year
-                    current_year += 1
-                elif month == 12 and previous_month == 1:
-                    # January to December transition - decrement year
-                    current_year -= 1
+                # Detect December -> January transitions
+                if previous_month == 12 and month == 1:
+                    transition_count += 1
+                    
+                    if transition_count == 1:
+                        # First transition: December (base-1) -> January (base)
+                        # We were in December of previous year, now entering base year
+                        current_year = base_year
+                        print(f"Dec->Jan transition detected at {date_str}")
+                    else:
+                        # Subsequent transitions: December (base) -> January (base+1) 
+                        current_year += 1
+                        print(f"Dec->Jan transition #{transition_count} at {date_str}")
+                
+                # Special handling for December dates at the start
+                elif month == 12 and previous_month is None:
+                    # First date is December - it should be from year before base year
+                    current_year = base_year - 1
+                    # December dates assigned to previous year
                 
                 year_mapping[date_str] = current_year
                 previous_month = month
@@ -174,9 +157,21 @@ class YearTracker:
                 print(f"Warning: Could not parse date '{date_str}'")
                 continue
         
+        # Report the results
+        years_covered = sorted(set(year_mapping.values()))
+        print(f"Year mapping: {len(dates)} dates across {len(years_covered)} years")
+        # Transition count tracked
+        
+        # Show key dates for verification
+        key_dates = [(date, year) for date, year in year_mapping.items() 
+                    if date in ["30.12", "31.12", "01.01", "25.01"]]
+        if key_dates:
+            # Key dates processed
+            for date, year in sorted(key_dates, key=lambda x: (x[1], x[0])):
+                pass  # Date assignment logged
+        
         self.year_mapping = year_mapping
         return year_mapping
-    
     def get_date_with_year(self, date_str: str) -> str:
         """
         Get a date string with the correct year

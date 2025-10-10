@@ -47,6 +47,7 @@ This directory contains all the generated ICS (iCalendar) files for the Schichtp
 - Considered temporary working files (not long-term storage)
 - Excluded from the repo as they hold sensitive info
 - Files are automatically cleaned up after processing
+- To prevent bots from scraping Calendars, restrict access to the Domain with a precise .htaccess
 
 ## File Format
 - Standard iCalendar (.ics) format

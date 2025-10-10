@@ -42,57 +42,70 @@ The setup script will:
 
 ## Configuration
 
-Edit `config.json` to configure:
+Edit `config.json` to configure the application. The configuration file is created automatically during setup with default values.
 
-### Shift Definitions
+### Mandatory Configuration
+
+These settings **must** be configured before the application can function properly:
+
+#### `pdf_url` (string)
+The URL from which the PDF schedule is downloaded. Update this to point to your organization's schedule PDF.
+
+**Example:**
 ```json
-{
-    "shifts": {
-        "A": {"start": "07:00", "end": "14:00", "name": "Frühschicht"},
-        "B": {"start": "14:00", "end": "24:00", "name": "Spätschicht"},
-        "N": {"start": "00:00", "end": "07:00", "name": "Nachtschicht"},
-        "WF": {"start": "00:00", "end": "12:00", "name": "Wochenende Frühschicht"},
-        "WS": {"start": "12:00", "end": "24:00", "name": "Wochenende Spätschicht"},
-        "K": {"start": "0:00", "end": "24:00", "name": "Krank"},
-        "U": {"start": "0:00", "end": "24:00", "name": "Urlaub"},
-        "F": {"start": "0:00", "end": "24:00", "name": "Frei"},
+"pdf_url": "https://example.com/path/to/schedule.pdf"
+```
 
+#### `users` (object)
+Define one or more users whose schedules should be processed. Each user entry requires:
+
+- **`name`** (string, required): Full name exactly as it appears in the PDF schedule. This is critical for accurate schedule extraction.
+- **`family`** (boolean, required): Whether to include the first name in calendar event summaries. Set to `true` if multiple people with the same last name share calendars.
+- **`mail`** (string, required): Email address for notifications. Use an empty string `""` to disable email notifications for this user.
+
+**Example:**
+```json
+"users": {
+    "user1": {
+        "name": "John Doe",
+        "family": false,
+        "mail": "john@example.com"
+    },
+    "user2": {
+        "name": "Jane Doe",
+        "family": true,
+        "mail": "jane@example.com"
     }
 }
 ```
 
-### Default Pattern for Schedule Extension
-```json
-{
-    "default_pattern": [
-        "N", "N", "N", "N", "N", "WF", "WF",
-        "A", "A", "A", "A", "A", "F", "F",
-        "B", "B", "B", "B", "B", "WS", "WS",
-        "F", "F", "F", "F", "F", "F", "F"
-    ]
-}
-```
+### Optional Configuration
 
-### Default Continuation Length
-```json
-{
-    "default_continuation_days": 365
-}
-```
-This setting controls how many days the schedule is extended beyond the PDF data using the default pattern. The value represents the total number of days for continuation events.
+These settings have sensible defaults but can be customized to match your needs:
 
-### User Configurations
-```json
-{
-    "users": {
-        "user1": {
-            "name": "John Doe",
-            "family": false,
-            "mail": "john@example.com"
-        }
-    }
-}
-```
+#### `shifts` (object)
+Defines shift codes, times, and display names. Modify these to match your organization's shift definitions. Each shift requires:
+- **`start`** (string): Start time in 24-hour format (HH:MM)
+- **`end`** (string): End time in 24-hour format (HH:MM, use "24:00" for midnight)
+- **`name`** (string): Display name for the shift in calendar events
+
+**Default shifts include:** A (Frühschicht), B (Spätschicht), N (Nachtschicht), WF (Wochenende Frühschicht), WS (Wochenende Spätschicht), K (Krank), U (Urlaub), F (Frei)
+
+**Note:** Only modify if your schedule uses different shift codes or times.
+
+#### `default_pattern` (array)
+A 28-day pattern used to extend schedules beyond the PDF data. The pattern repeats cyclically for the continuation period. Modify this array to match your organization's typical rotation schedule.
+
+**Default:** A 4-week rotation pattern (5 days N, 2 days WF, 5 days A, 2 days F, 5 days B, 2 days WS, 7 days F)
+
+**Note:** Can be overridden at runtime with `--no-extend` to disable schedule extension.
+
+#### `default_continuation_days` (integer)
+Number of days to extend the schedule beyond the PDF data using the default pattern. Useful when the PDF only contains the current month but you want year-round calendar entries.
+
+**Default:** `365` (one year)
+
+**Note:** Can be overridden at runtime with `--extend-days <number>`.
 
 ## Usage
 

@@ -13,7 +13,7 @@ import hashlib
 from utils.mail_utils import send_mail
 from utils.pdf_processor import extract_and_create_ical
 from utils.ftp_uploader import upload_to_ftp, compare_ics_files
-from utils.config_loader import load_config, get_default_continuation_days
+from utils.config_loader import load_config, get_default_continuation_days, get_pdf_url
 from utils.credentials_manager import get_credentials
 
 # Configure logging
@@ -116,7 +116,10 @@ def main():
             exit(1)
     else:
         username, password = get_credentials()
-        pdf_url = "https://example.com/path/to/schichtplan.pdf"
+        pdf_url = get_pdf_url()
+        if not pdf_url:
+            print("Error: PDF URL not configured in config.json")
+            exit(1)
         pdf_content = download_pdf(pdf_url, username, password)
         if not pdf_content:
             print("Failed to download PDF")

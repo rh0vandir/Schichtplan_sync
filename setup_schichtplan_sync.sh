@@ -88,42 +88,10 @@ mkdir -p "$SCRIPT_DIR/calendars"
 mkdir -p "$SCRIPT_DIR/utils"
 
 # Check for configuration file
-if [ ! -f "$SCRIPT_DIR/schichtplan_sync.json" ]; then
+if [ ! -f "$SCRIPT_DIR/config.json" ]; then
     echo -e "${YELLOW}Creating default configuration file...${NC}"
-    cat > "$SCRIPT_DIR/schichtplan_sync.json" << 'EOL'
-{
-    "shifts": {
-        "A": {"start": "07:00", "end": "14:00", "name": "Frühschicht"},
-        "B": {"start": "14:00", "end": "24:00", "name": "Spätschicht"},
-        "N": {"start": "00:00", "end": "07:00", "name": "Nachtschicht"},
-        "WF": {"start": "00:00", "end": "12:00", "name": "Wochenende Frühschicht"},
-        "WS": {"start": "12:00", "end": "24:00", "name": "Wochenende Spätschicht"},
-        "K": {"start": "0:00", "end": "24:00", "name": "Krank"},
-        "U": {"start": "0:00", "end": "24:00", "name": "Urlaub"},
-        "F": {"start": "0:00", "end": "24:00", "name": "Frei"}
-    },
-    "default_pattern": [
-        "N", "N", "N", "N", "N", "WF", "WF",
-        "A", "A", "A", "A", "A", "F", "F",
-        "B", "B", "B", "B", "B", "WS", "WS",
-        "F", "F", "F", "F", "F", "F", "F"
-    ],
-    "default_continuation_days": 365,
-    "users": {
-        "user1": {
-            "name": "Some Name",
-            "family": false,
-            "mail": "some@email.com"
-        },
-        "user2": {
-            "name": "Some Other Name",
-            "family": true,
-            "mail": "someother@email.com"
-        }
-    }
-}
-EOL
-    echo -e "${GREEN}Default configuration file created. Please edit schichtplan_sync.json to add your users and shift configurations.${NC}"
+    cp "$SCRIPT_DIR/config.json.sample" "$SCRIPT_DIR/config.json"
+    echo -e "${GREEN}Default configuration file created. Please edit config.json to add your users and shift configurations.${NC}"
 fi
 
 echo -e "${GREEN}Setup completed successfully!${NC}"
@@ -131,7 +99,7 @@ echo -e "To activate the virtual environment, run: ${BOLD}source \"$SCRIPT_DIR/v
 echo -e "To run the script: ${BOLD}\"$SCRIPT_DIR/venv_schichtplan_sync/bin/python\" \"$SCRIPT_DIR/schichtplan_sync.py\"${NORMAL}"
 
 echo -e "\n${BLACK_ON_YELLOW}Configuration:${NC}"
-echo -e "1. Edit ${BOLD}$SCRIPT_DIR/schichtplan_sync.json${NORMAL} to configure:"
+echo -e "1. Edit ${BOLD}$SCRIPT_DIR/config.json${NORMAL} to configure:"
 echo -e "   - Shift definitions (start/end times and names)"
 echo -e "   - Default pattern for schedule extension"
 echo -e "   - Default continuation length (days to extend schedule)"
@@ -152,7 +120,7 @@ echo -e "5. Schedules can be automatically extended using configurable patterns"
 echo -e "\n${BLACK_ON_YELLOW}Email Notifications:${NC}"
 echo -e "The script can send email notifications when the schedule changes:"
 echo -e "1. Configure your SMTP server credentials when prompted (stored securely in ${BOLD}~/.schichtplan_smtp_credentials${NORMAL})"
-echo -e "2. Add email addresses to user configurations in $SCRIPT_DIR/schichtplan_sync.json"
+echo -e "2. Add email addresses to user configurations in $SCRIPT_DIR/config.json"
 echo -e "3. Notifications will be sent only when the schedule actually changes"
 echo -e "4. The mail utility (${BOLD}$SCRIPT_DIR/utils/mail_utils.py${NORMAL}) can be used independently for custom notifications"
 
@@ -167,7 +135,7 @@ echo -e "    - credentials_manager.py (credential management)"
 echo -e "    - config_loader.py (configuration loading)"
 echo -e "    - shift_continuation.py (schedule extension)"
 echo -e "    - year_tracker.py (year boundary handling)"
-echo -e "  ${BOLD}$SCRIPT_DIR/schichtplan_sync.json${NORMAL}: Configuration file for shifts and users"
+echo -e "  ${BOLD}$SCRIPT_DIR/config.json${NORMAL}: Configuration file for shifts and users"
 echo -e "  ${BOLD}$SCRIPT_DIR/venv_schichtplan_sync/${NORMAL}: Python virtual environment"
 
 echo -e "\n${BLACK_ON_YELLOW}Command Line Options:${NC}"

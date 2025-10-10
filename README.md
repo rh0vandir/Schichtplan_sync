@@ -37,9 +37,8 @@ A Python-based tool for automatically downloading, parsing, and syncing work sch
 The setup script will:
 - Check for required dependencies (Python 3, pip3, Tesseract)
 - Create a virtual environment
-- Install required Python packages
+- Install required Python packages from requirements.txt
 - Create a default configuration file
-- Generate a requirements.txt file
 
 ## Configuration
 

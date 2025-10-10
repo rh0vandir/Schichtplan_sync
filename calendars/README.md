@@ -36,7 +36,7 @@ This directory contains all the generated ICS (iCalendar) files for the Schichtp
 - Used by schedule extension system (`utils/shift_continuation.py`)
 
 ### Configuration
-- Schedule extension patterns are defined in `schichtplan_sync.json`
+- Schedule extension patterns are defined in `config.json`
 - Default continuation length is configurable via `default_continuation_days` in the config
 - Custom extension periods can be specified via `--extend-days` option
 - Extension can be disabled with `--no-extend` flag

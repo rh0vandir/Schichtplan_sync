@@ -121,7 +121,7 @@ python3 utils/test_mail.py
 
 ### Configuration Options
 
-The utility modules support several configuration options that can be set in `schichtplan_sync.json`:
+The utility modules support several configuration options that can be set in `config.json`:
 
 #### Default Continuation Length
 ```json

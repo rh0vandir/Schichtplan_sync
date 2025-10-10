@@ -43,7 +43,7 @@ The setup script will:
 
 ## Configuration
 
-Edit `schichtplan_sync.json` to configure:
+Edit `config.json` to configure:
 
 ### Shift Definitions
 ```json
@@ -181,7 +181,7 @@ schichtplan_sync/
 ├── schichtplan_sync.py          # Main script
 ├── setup_schichtplan_sync.sh    # Setup script
 ├── cron_schichtplan.sh          # Cron automation script
-├── schichtplan_sync.json        # Configuration file
+├── config.json                   # Configuration file
 ├── requirements.txt              # Python dependencies
 ├── calendars/                    # Generated iCal files
 ├── utils/                        # Utility modules

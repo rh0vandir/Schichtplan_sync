@@ -6,17 +6,16 @@ from icalendar import Calendar, Event, Component
 import pytz
 import os
 from typing import List, Dict
-from .year_tracker import YearTracker
 from .config_loader import get_default_continuation_days
 
 def get_shift_info(shift: str, shifts_config: Dict) -> Dict[str, str]:
     """Get the time and name for a given shift code"""
     # First try to parse the shift code for custom time ranges
     shift_letter, custom_time = parse_shift_time(shift)
-    
+
     # Get base shift info
     base_info = shifts_config.get(shift_letter, {'start': '', 'end': '', 'name': ''})
-    
+
     # If we found a custom time range, use it instead of the default
     if custom_time:
         start_time, end_time = custom_time.split('-')
@@ -25,7 +24,7 @@ def get_shift_info(shift: str, shifts_config: Dict) -> Dict[str, str]:
             'end': end_time,
             'name': base_info['name']
         }
-    
+
     return base_info
 
 def parse_shift_time(shift_code: str) -> tuple:
@@ -42,27 +41,27 @@ def parse_shift_time(shift_code: str) -> tuple:
         shift_letter = shift_code[0]
         # Try to find time range in the format "N20-7" or similar
         time_match = re.search(r'(\d{1,2})-(\d{1,2})', shift_code[1:])
-    
+
     if time_match:
         start_hour = int(time_match.group(1))
         end_hour = int(time_match.group(2))
-        
+
         # Format hours to two digits
         start_time = f"{start_hour:02d}:00"
         end_time = f"{end_hour:02d}:00"
-        
+
         return shift_letter, f"{start_time}-{end_time}"
-    
+
     return shift_letter, None
 
-def create_ical_file(dates: List[str], shifts: List[str], name: str, 
-                    shifts_config: Dict, family: bool = False, 
+def create_ical_file(dates: List[str], shifts: List[str], name: str,
+                    shifts_config: Dict, family: bool = False,
                     year_mapping: Dict[str, int] = None,
                     pdf_dates: List[str] = None,
                     default_continuation_days: int = get_default_continuation_days()) -> str:
     """
     Create an iCal file from the shift data
-    
+
     Args:
         dates: List of dates in DD.MM or DD.MM.YYYY format
         shifts: List of shift codes corresponding to dates
@@ -73,7 +72,7 @@ def create_ical_file(dates: List[str], shifts: List[str], name: str,
         pdf_dates: List of dates that originated from the PDF (for X-FOO:bar comments)
         default_continuation_days: Number of days for continuation (uses config default)
     """
-    
+
     cal = Calendar()
     cal.add('prodid', '-//Schichtplan Sync//')
     cal.add('version', '2.0')
@@ -85,13 +84,13 @@ def create_ical_file(dates: List[str], shifts: List[str], name: str,
     cal.add('refresh-interval', 'PT15M')  # Refresh every 15 minutes
     cal.add('x-published-ttl', 'PT15M')   # Time to live for published calendar
     cal.add('charset', 'UTF-8')
-    
+
     # Add VTIMEZONE component
     tz = pytz.timezone('Europe/Berlin')
     vtimezone = Component()
     vtimezone.add('tzid', 'Europe/Berlin')
     vtimezone.name = 'VTIMEZONE'
-    
+
     # Add standard time info
     standard = Component()
     standard.name = 'STANDARD'
@@ -101,7 +100,7 @@ def create_ical_file(dates: List[str], shifts: List[str], name: str,
     standard.add('tzoffsetto', timedelta(hours=1))
     standard.add('tzname', 'CET')
     vtimezone.add_component(standard)
-    
+
     # Add daylight saving time info
     daylight = Component()
     daylight.name = 'DAYLIGHT'
@@ -111,24 +110,24 @@ def create_ical_file(dates: List[str], shifts: List[str], name: str,
     daylight.add('tzoffsetto', timedelta(hours=2))
     daylight.add('tzname', 'CEST')
     vtimezone.add_component(daylight)
-    
+
     cal.add_component(vtimezone)
-    
+
     # Count events for reporting
     skipped_events = 0  # Free days (F)
     created_events = 0  # Work shifts and PT (U)
-    
+
     # Separate PDF dates and continuation dates
     pdf_events = []
     continuation_events = []
-    
+
     for idx, (date, shift) in enumerate(zip(dates, shifts)):
         # Skip creating events for free days (F)
         # This keeps the calendar clean by only showing actual work shifts and holidays
         if shift and shift != 'F':
             shift_info = get_shift_info(shift, shifts_config)
             if shift_info['start'] and shift_info['end']:
-                
+
                 # Parse date and times - handle both DD.MM and DD.MM.YYYY formats
                 try:
                     if len(date.split('.')) == 3:
@@ -146,35 +145,38 @@ def create_ical_file(dates: List[str], shifts: List[str], name: str,
                 except ValueError:
                     print(f"Warning: Could not parse date '{date}', skipping event")
                     continue
-                
+
                 # Parse start time
                 start_hour, start_minute = map(int, shift_info['start'].split(':'))
                 start_dt = datetime.combine(event_date, datetime.min.time().replace(hour=start_hour, minute=start_minute))
-                
+
                 # Parse end time, handling 24:00 case
                 end_hour, end_minute = map(int, shift_info['end'].split(':'))
                 if end_hour == 24:
-                    end_dt = datetime.combine(event_date + timedelta(days=1), datetime.min.time().replace(hour=0, minute=end_minute))
+                    next_day = event_date + timedelta(days=1)
+                    end_dt = datetime.combine(next_day, datetime.min.time().replace(
+                        hour=0, minute=end_minute))
                 else:
-                    end_dt = datetime.combine(event_date, datetime.min.time().replace(hour=end_hour, minute=end_minute))
-                
+                    end_dt = datetime.combine(event_date, datetime.min.time().replace(
+                        hour=end_hour, minute=end_minute))
+
                 # Handle overnight shifts
                 if end_dt < start_dt and end_hour != 24:
                     end_dt += timedelta(days=1)
-                
+
                 # Localize to timezone
                 start_dt = tz.localize(start_dt)
                 end_dt = tz.localize(end_dt)
-                
+
                 # Create event
                 event = Event()
                 # Create consistent UID based on name and date only
                 event.add('uid', f"schichtplan_{name.replace(' ', '_')}_{date.replace('.', '')}")
-                
+
                 # Create summary based on family flag
                 first_name = name.split()[0] if family else ''
                 prefix = f"{first_name} " if family else ""
-                
+
                 # Handle different shift types
                 if shift == 'U':
                     # PTO - use the shift name from config
@@ -186,15 +188,15 @@ def create_ical_file(dates: List[str], shifts: List[str], name: str,
                     # Remove numbers and "HO" from shift letter
                     shift_letter = ''.join(c for c in shift if not c.isdigit()).replace('HO', '')
                     summary = f"{prefix}{shift_letter} {start_hour}-{end_hour}"
-                
+
                 event.add('summary', summary)
-                
+
                 # Create description with Homeoffice info if present
                 description = f'Schicht: {shift}\nName: {name}'
                 if 'HO' in shift:
                     description += '\nHomeoffice'
                 event.add('description', description)
-                
+
                 event.add('dtstart', start_dt)
                 event.add('dtend', end_dt)
                 event.add('dtstamp', datetime.now(tz))
@@ -205,23 +207,23 @@ def create_ical_file(dates: List[str], shifts: List[str], name: str,
                 event.add('transp', 'OPAQUE')
                 event.add('class', 'PUBLIC')
                 event.add('all-day', False)
-                
+
                 # Categorize events by source
                 if pdf_dates and date in pdf_dates:
                     pdf_events.append(event)
                 else:
                     continuation_events.append(event)
-                
+
                 created_events += 1
         else:
             if shift == 'F':
                 skipped_events += 1
-    
+
     # Save calendar to file with proper line endings and section structure
     calendars_dir = "calendars"
     os.makedirs(calendars_dir, exist_ok=True)
     ical_file = os.path.join(calendars_dir, f"schichtplan_{name.replace(' ', '_')}.ics")
-    
+
     # Manually construct the iCal file to place X-FOO:bar properties between events
     with open(ical_file, 'w', encoding='utf-8') as f:
         # Write calendar header
@@ -236,7 +238,7 @@ def create_ical_file(dates: List[str], shifts: List[str], name: str,
         f.write("REFRESH-INTERVAL:PT15M\r\n")
         f.write("X-PUBLISHED-TTL:PT15M\r\n")
         f.write("CHARSET:UTF-8\r\n")
-        
+
         # Write VTIMEZONE component
         f.write("BEGIN:VTIMEZONE\r\n")
         f.write("TZID:Europe/Berlin\r\n")
@@ -255,7 +257,7 @@ def create_ical_file(dates: List[str], shifts: List[str], name: str,
         f.write("TZNAME:CEST\r\n")
         f.write("END:DAYLIGHT\r\n")
         f.write("END:VTIMEZONE\r\n")
-        
+
         # Add PDF section with events
         if pdf_events:
             # Extract year from first PDF date for the comment
@@ -266,10 +268,10 @@ def create_ical_file(dates: List[str], shifts: List[str], name: str,
                 pdf_year = str(year_mapping[pdf_dates[0]])
             else:
                 pdf_year = str(datetime.now().year)
-            
+
             # Add PDF section start marker
             f.write(f"X-SHIFT-PDF-{pdf_year}:START\r\n")
-            
+
             # Add all PDF events
             for event in pdf_events:
                 f.write("BEGIN:VEVENT\r\n")
@@ -288,18 +290,18 @@ def create_ical_file(dates: List[str], shifts: List[str], name: str,
                 f.write(f"CLASS:{event.get('class')}\r\n")
                 f.write(f"ALL-DAY:{event.get('all-day')}\r\n")
                 f.write("END:VEVENT\r\n")
-            
+
             # Add PDF section end marker
             f.write(f"X-SHIFT-PDF-{pdf_year}:END\r\n")
-        
+
         # Add continuation section with events
         if continuation_events:
             # Use the configured continuation days
             continuation_days = default_continuation_days
-            
+
             # Add continuation section start marker
             f.write(f"X-CONTINUATION-{continuation_days}:START\r\n")
-            
+
             # Add all continuation events
             for event in continuation_events:
                 f.write("BEGIN:VEVENT\r\n")
@@ -318,18 +320,18 @@ def create_ical_file(dates: List[str], shifts: List[str], name: str,
                 f.write(f"CLASS:{event.get('class')}\r\n")
                 f.write(f"ALL-DAY:{event.get('all-day')}\r\n")
                 f.write("END:VEVENT\r\n")
-            
+
             # Add continuation section end marker
             f.write(f"X-CONTINUATION-{continuation_days}:END\r\n")
-        
+
         # Write calendar footer
         f.write("END:VCALENDAR\r\n")
-    
+
     # Report on what was created and what was skipped
     if skipped_events > 0:
         print(f"Calendar created: {created_events} work shifts and PT, skipped {skipped_events} free days")
     else:
         print(f"Calendar created: {created_events} work shifts and PT")
-    
+
     print(f"iCal file created: {ical_file}")
     return ical_file

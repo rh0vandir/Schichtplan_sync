@@ -1,174 +1,117 @@
-# CI/CD Pipeline Setup
+# CI/CD Pipeline
 
-## Overview
-A comprehensive CI/CD pipeline has been set up for the Schichtplan Sync project using GitHub Actions.
+This project uses GitHub Actions for continuous integration and continuous deployment.
 
-## What's Included
+## Quick Overview
 
-### 1. GitHub Actions Workflow (`.github/workflows/ci.yml`)
-The workflow runs automatically on:
-- Push to `master`, `main`, or `develop` branches
-- Pull requests to these branches
+The CI/CD pipeline automatically runs on every push and pull request to:
+- Test code across multiple Python versions (3.9, 3.10, 3.11, 3.12)
+- Run linting and code quality checks
+- Generate test coverage reports
+- Validate configuration files
 
-### 2. Testing Matrix
-Tests run on multiple Python versions:
-- Python 3.9
-- Python 3.10
-- Python 3.11
-- Python 3.12
+## Status
 
-### 3. Test Suite (`tests/`)
-Comprehensive tests covering configuration, imports, and core functionality.
+Check the current build status: [GitHub Actions](https://github.com/rh0vandir/Schichtplan_sync/actions)
 
-> 📖 **For detailed information about tests**, see [`tests/README.md`](tests/README.md)
-
-### 4. Code Quality Checks
-- **Flake8**: Catches syntax errors and undefined names
-- **Pylint**: Analyzes code quality and style
-- **Code Coverage**: Tracks test coverage (with Codecov integration ready)
-
-### 5. Development Dependencies (`requirements-dev.txt`)
-Additional tools for development:
-- pytest and pytest-cov for testing
-- flake8 and pylint for linting
-- black for code formatting
-- mypy for type checking
-
-## Running Tests and Linting Locally
-
-### Install development dependencies:
-```bash
-pip install -r requirements-dev.txt
-```
-
-### Run tests:
-```bash
-pytest tests/ -v
-```
-
-> 📖 **For more test commands and options**, see [`tests/README.md`](tests/README.md)
-
-### Run linting:
-```bash
-# Quick syntax check (catches critical errors)
-flake8 . --select=E9,F63,F7,F82 --exclude=venv_schichtplan_sync
-
-# Full linting (style and quality analysis)
-pylint schichtplan_sync.py utils/*.py --max-line-length=127
-```
-
-## CI/CD Pipeline Features
-
-### ✅ Automated Testing
-Every push and pull request automatically:
-1. Installs system dependencies (tesseract-ocr, poppler-utils)
-2. Sets up Python environment
-3. Installs all dependencies
-4. Runs the full test suite
-5. Reports results and coverage
-
-### ✅ Multi-Python Support
-Tests ensure compatibility across Python 3.9 through 3.12
-
-### ✅ Fast Feedback
-- Uses pip caching to speed up builds
-- Runs tests in parallel across Python versions
-- Provides detailed error messages on failures
-
-### ✅ Code Quality Gates
-- Blocks merges if syntax errors are found
-- Provides warnings for code quality issues
-- Tracks code coverage trends
-
-## Adding Status Badges (Optional)
-
-You can add these to your README.md to show build status:
-
+Add this badge to your README for at-a-glance status:
 ```markdown
 ![CI Status](https://github.com/rh0vandir/Schichtplan_sync/workflows/CI%2FCD%20Pipeline/badge.svg)
 ```
 
-## Pipeline Stages
+## Quick Start
 
-### Stage 1: Setup
-- Checkout code
-- Set up Python environment (matrix: 3.9, 3.10, 3.11, 3.12)
-- Install system dependencies (tesseract-ocr, poppler-utils)
-- Cache pip packages for faster builds
+### Running Tests Locally
 
-### Stage 2: Dependencies
-- Install Python packages from requirements.txt
-- Install testing tools (pytest, flake8, pylint)
+```bash
+# Install development dependencies
+pip install -r requirements-dev.txt
 
-### Stage 3: Code Quality
-- **Syntax Check**: Flake8 catches critical errors
-- **Style Analysis**: Pylint analyzes code quality
-- **Exit Strategy**: Syntax errors fail the build, style issues warn only
+# Run tests
+pytest tests/ -v
 
-### Stage 4: Testing
-- Run full test suite with pytest
-- Generate coverage reports
-- Upload coverage to Codecov (optional)
+# Run with coverage
+pytest tests/ -v --cov=. --cov-report=term-missing
 
-### Stage 5: Validation
-- Test main script syntax with py_compile
-- Validate all utility modules can be imported
-- Check sample config is valid JSON
+# Run linting
+flake8 . --select=E9,F63,F7,F82 --exclude=venv_schichtplan_sync
+```
 
-## What Gets Tested
+## Documentation
 
-See [`tests/README.md`](tests/README.md) for detailed test coverage information.
+For detailed information, see the relevant documentation:
 
-## Future Enhancements
+### 🔧 **CI/CD Workflow Configuration**
+[`.github/workflows/README.md`](.github/workflows/README.md)
+- GitHub Actions workflow details
+- Pipeline stages and jobs
+- How to modify workflows
+- Troubleshooting CI issues
+- Local testing of workflows
 
-Consider adding:
-- Integration tests with test PDF files
-- Performance benchmarks
-- Automated deployment on successful builds
-- Security scanning (Dependabot, CodeQL)
-- Documentation generation
+### 🧪 **Test Suite**
+[`tests/README.md`](tests/README.md)
+- Test structure and coverage
+- Writing new tests
+- Running specific tests
+- Testing best practices
+
+### 📦 **Development Tools**
+[`requirements-dev.txt`](requirements-dev.txt)
+- pytest and pytest-cov - Testing framework
+- flake8 - Style and syntax checking
+- pylint - Code quality analysis
+- black - Code formatting
+- mypy - Type checking
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────┐
+│  Push / Pull Request                            │
+└────────────────┬────────────────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────────────────┐
+│  GitHub Actions (.github/workflows/ci.yml)      │
+└────────────────┬────────────────────────────────┘
+                 │
+                 ├─────► Test Job (Matrix: 3.9-3.12)
+                 │       ├─ Install dependencies
+                 │       ├─ Lint (flake8)
+                 │       ├─ Run tests (pytest)
+                 │       ├─ Validate syntax
+                 │       └─ Upload coverage
+                 │
+                 └─────► Code Quality Job
+                         └─ Pylint analysis
+```
+
+## Key Features
+
+✅ **Multi-Python Testing** - Ensures compatibility across Python 3.9-3.12  
+✅ **Fast Feedback** - Parallel execution with cached dependencies  
+✅ **Code Quality Gates** - Automated linting and style checks  
+✅ **Coverage Tracking** - Test coverage reports on every run  
+✅ **Non-Blocking Warnings** - Style issues warn but don't fail builds  
 
 ## Troubleshooting
 
-If tests fail in CI but pass locally:
-1. Check Python version compatibility
-2. Verify all dependencies are in requirements.txt
-3. Ensure no local environment variables are required
-4. Check for file path differences (absolute vs relative)
+**Tests fail in CI but pass locally?**
+1. Check Python version (CI tests 3.9-3.12)
+2. Verify all dependencies are in `requirements.txt`
+3. Ensure no local-only configuration/environment variables
 
-## Workflow Configuration
+**Need more help?**
+- See [`.github/workflows/README.md`](.github/workflows/README.md#troubleshooting) for detailed troubleshooting
+- Check the [Actions tab](https://github.com/rh0vandir/Schichtplan_sync/actions) for logs
 
-### Modifying the CI Pipeline
-
-To change the CI/CD workflow, edit `.github/workflows/ci.yml`:
-
-**Add a Python version:**
-```yaml
-strategy:
-  matrix:
-    python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-```
-
-**Add a system dependency:**
-```yaml
-- name: Install system dependencies
-  run: |
-    sudo apt-get update
-    sudo apt-get install -y tesseract-ocr poppler-utils your-package
-```
-
-**Add a testing stage:**
-```yaml
-- name: Your new test stage
-  run: |
-    your-test-command
-```
-
-## Maintaining the Pipeline
+## Contributing
 
 When making changes:
-1. **Add new tests**: Update `tests/` directory (see `tests/README.md`)
-2. **Modify workflow**: Edit `.github/workflows/ci.yml`
-3. **Test locally**: Ensure tests pass before pushing
-4. **Update documentation**: Keep this file and `tests/README.md` in sync
+1. Write or update tests ([`tests/README.md`](tests/README.md))
+2. Run tests locally before pushing
+3. Ensure code passes linting
+4. Update documentation as needed
 
+The CI pipeline will automatically validate your changes when you push or create a pull request.

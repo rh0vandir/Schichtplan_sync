@@ -9,4 +9,4 @@ __all__ = [
     'get_default_pattern',
     'get_credentials',
     'get_ftp_credentials'
-] 
+]

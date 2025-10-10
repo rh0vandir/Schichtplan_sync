@@ -1,0 +1,33 @@
+{
+    "shifts": {
+        "A": {"start": "07:00", "end": "14:00", "name": "Frühschicht"},
+        "B": {"start": "14:00", "end": "24:00", "name": "Spätschicht"},
+        "N": {"start": "00:00", "end": "07:00", "name": "Nachtschicht"},
+        "WF": {"start": "00:00", "end": "12:00", "name": "Wochenende Frühschicht"},
+        "WS": {"start": "12:00", "end": "24:00", "name": "Wochenende Spätschicht"},
+        "K": {"start": "0:00", "end": "24:00", "name": "Krank"},
+        "U": {"start": "0:00", "end": "24:00", "name": "Urlaub"},
+        "F": {"start": "0:00", "end": "24:00", "name": "Frei"}
+    },
+    "default_pattern": [
+        "N", "N", "N", "N", "N", "WF", "WF",
+        "A", "A", "A", "A", "A", "F", "F",
+        "B", "B", "B", "B", "B", "WS", "WS",
+        "F", "F", "F", "F", "F", "F", "F"
+    ],
+    "default_continuation_days": 365,
+    "pdf_url": "https://example.com/path/to/schichtplan.pdf",
+    "users": {
+        "user1": {
+            "name": "Some Name",
+            "family": false,
+            "mail": "some@email.com"
+        },
+        "user2": {
+            "name": "Some Other Name",
+            "family": true,
+            "mail": "someother@email.com"
+        }
+    }
+}
+

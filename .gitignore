@@ -24,7 +24,6 @@ sync.log
 # IDE
 .vscode/
 .idea/
-.cursorrules
 *.swp
 *.swo
 

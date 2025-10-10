@@ -18,11 +18,9 @@ Tests run on multiple Python versions:
 - Python 3.12
 
 ### 3. Test Suite (`tests/`)
-Comprehensive tests covering:
-- **Config Loader Tests**: Validates configuration file structure and loading
-- **Import Tests**: Ensures all modules can be imported without errors
-- **Basic Functionality Tests**: Tests PDF comparison and core functions
-- **Dependency Tests**: Verifies all required packages are available
+Comprehensive tests covering configuration, imports, and core functionality.
+
+> 📖 **For detailed information about tests**, see [`tests/README.md`](tests/README.md)
 
 ### 4. Code Quality Checks
 - **Flake8**: Catches syntax errors and undefined names
@@ -36,29 +34,26 @@ Additional tools for development:
 - black for code formatting
 - mypy for type checking
 
-## Running Tests Locally
+## Running Tests and Linting Locally
 
 ### Install development dependencies:
 ```bash
 pip install -r requirements-dev.txt
 ```
 
-### Run all tests:
+### Run tests:
 ```bash
 pytest tests/ -v
 ```
 
-### Run tests with coverage:
-```bash
-pytest tests/ -v --cov=. --cov-report=term-missing
-```
+> 📖 **For more test commands and options**, see [`tests/README.md`](tests/README.md)
 
 ### Run linting:
 ```bash
-# Quick syntax check
+# Quick syntax check (catches critical errors)
 flake8 . --select=E9,F63,F7,F82 --exclude=venv_schichtplan_sync
 
-# Full linting
+# Full linting (style and quality analysis)
 pylint schichtplan_sync.py utils/*.py --max-line-length=127
 ```
 
@@ -93,22 +88,36 @@ You can add these to your README.md to show build status:
 ![CI Status](https://github.com/rh0vandir/Schichtplan_sync/workflows/CI%2FCD%20Pipeline/badge.svg)
 ```
 
+## Pipeline Stages
+
+### Stage 1: Setup
+- Checkout code
+- Set up Python environment (matrix: 3.9, 3.10, 3.11, 3.12)
+- Install system dependencies (tesseract-ocr, poppler-utils)
+- Cache pip packages for faster builds
+
+### Stage 2: Dependencies
+- Install Python packages from requirements.txt
+- Install testing tools (pytest, flake8, pylint)
+
+### Stage 3: Code Quality
+- **Syntax Check**: Flake8 catches critical errors
+- **Style Analysis**: Pylint analyzes code quality
+- **Exit Strategy**: Syntax errors fail the build, style issues warn only
+
+### Stage 4: Testing
+- Run full test suite with pytest
+- Generate coverage reports
+- Upload coverage to Codecov (optional)
+
+### Stage 5: Validation
+- Test main script syntax with py_compile
+- Validate all utility modules can be imported
+- Check sample config is valid JSON
+
 ## What Gets Tested
 
-1. **Configuration Validation**
-   - Sample config is valid JSON
-   - All required fields are present
-   - Config can be loaded successfully
-
-2. **Module Imports**
-   - All utility modules import without errors
-   - Required dependencies are available
-   - Main script can be imported
-
-3. **Core Functionality**
-   - PDF comparison and hashing works
-   - Error handling for invalid URLs
-   - File operations work correctly
+See [`tests/README.md`](tests/README.md) for detailed test coverage information.
 
 ## Future Enhancements
 
@@ -127,11 +136,39 @@ If tests fail in CI but pass locally:
 3. Ensure no local environment variables are required
 4. Check for file path differences (absolute vs relative)
 
-## Maintaining the Test Suite
+## Workflow Configuration
 
-When adding new features:
-1. Add corresponding tests in `tests/`
-2. Run tests locally before pushing
-3. Update this documentation if needed
-4. Keep test coverage above 70%
+### Modifying the CI Pipeline
+
+To change the CI/CD workflow, edit `.github/workflows/ci.yml`:
+
+**Add a Python version:**
+```yaml
+strategy:
+  matrix:
+    python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+```
+
+**Add a system dependency:**
+```yaml
+- name: Install system dependencies
+  run: |
+    sudo apt-get update
+    sudo apt-get install -y tesseract-ocr poppler-utils your-package
+```
+
+**Add a testing stage:**
+```yaml
+- name: Your new test stage
+  run: |
+    your-test-command
+```
+
+## Maintaining the Pipeline
+
+When making changes:
+1. **Add new tests**: Update `tests/` directory (see `tests/README.md`)
+2. **Modify workflow**: Edit `.github/workflows/ci.yml`
+3. **Test locally**: Ensure tests pass before pushing
+4. **Update documentation**: Keep this file and `tests/README.md` in sync
 

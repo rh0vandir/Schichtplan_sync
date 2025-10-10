@@ -76,11 +76,12 @@ pip install --upgrade pip
 
 # Install requirements
 echo -e "${YELLOW}Installing requirements...${NC}"
-pip install pdfplumber requests cryptography icalendar pytz pdf2image pytesseract
-
-# Create requirements.txt
-echo -e "${YELLOW}Creating requirements.txt...${NC}"
-pip freeze > "$SCRIPT_DIR/requirements.txt"
+if [ -f "$SCRIPT_DIR/requirements.txt" ]; then
+    pip install -r "$SCRIPT_DIR/requirements.txt"
+else
+    echo -e "${RED}Error: requirements.txt not found${NC}"
+    exit 1
+fi
 
 # Create directory structure
 echo -e "${YELLOW}Creating directory structure...${NC}"

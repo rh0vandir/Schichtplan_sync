@@ -43,10 +43,10 @@ def download_pdf(url: str, username: str, password: str) -> bytes:
 def compare_pdf_content(new_pdf_content: bytes) -> bool:
     """Compare new PDF content with previous PDF content using hash"""
     hash_file = os.path.expanduser('~/.schichtplan_pdf_hash')
-    
+
     # Calculate hash of new PDF content
     new_hash = hashlib.sha256(new_pdf_content).hexdigest()
-    
+
     # Try to read previous hash
     try:
         if os.path.exists(hash_file):
@@ -57,7 +57,7 @@ def compare_pdf_content(new_pdf_content: bytes) -> bool:
                 return False
     except Exception as e:
         print(f"Error reading previous PDF hash: {e}")
-    
+
     # Save new hash
     try:
         with open(hash_file, 'w') as f:
@@ -65,13 +65,17 @@ def compare_pdf_content(new_pdf_content: bytes) -> bool:
         os.chmod(hash_file, 0o600)  # Set secure permissions
     except Exception as e:
         print(f"Warning: Could not save PDF hash: {e}")
-    
+
     return True
 
 def main():
-    parser = argparse.ArgumentParser(description='Convert PDF schedule to iCal with shift continuation')
-    parser.add_argument('--name', metavar='STR', help='Name to search for in the schedule (optional, if not provided will read from config)')
-    parser.add_argument('--local', metavar='FILE', help='Path to a local PDF file for testing (optional)')
+    parser = argparse.ArgumentParser(
+        description='Convert PDF schedule to iCal with shift continuation')
+    parser.add_argument('--name', metavar='STR',
+                        help='Name to search for in the schedule '
+                             '(optional, if not provided will read from config)')
+    parser.add_argument('--local', metavar='FILE',
+                        help='Path to a local PDF file for testing (optional)')
     parser.add_argument('--family', action='store_true', help='Include first name in event summary')
     parser.add_argument('--no-ftp', action='store_true', help='Skip FTP upload')
     parser.add_argument('--mail', action='store_true', help='Enable email notifications (default)')
@@ -79,33 +83,35 @@ def main():
     parser.add_argument('--force', action='store_true', help='Force processing even if PDF has not changed')
     parser.add_argument('--extend', action='store_true', help='Extend schedule using default pattern (default)')
     parser.add_argument('--no-extend', action='store_true', help='Disable schedule extension')
-    parser.add_argument('--extend-days', metavar='INT', type=int, default=None, help='Number of days to extend schedule (if not specified, uses config default_continuation_days value)')
-    
+    parser.add_argument('--extend-days', metavar='INT', type=int, default=None,
+                        help='Number of days to extend schedule '
+                             '(if not specified, uses config default_continuation_days value)')
+
     args = parser.parse_args()
-    
+
     # Handle mail arguments
     if args.no_mail:
         args.mail = False
     else:
         args.mail = True
-    
+
     # Handle extend arguments
     if args.no_extend:
         args.extend = False
     else:
         args.extend = True
-    
+
     # Load configuration
     SHIFTS, USERS = load_config()
     if not SHIFTS:
         print("Failed to load configuration")
         exit(1)
-    
+
     # Handle extend_days parameter - use config default if None
     if args.extend_days is None:
         args.extend_days = get_default_continuation_days()
 
-    
+
     if args.local:
         try:
             print(f"Using local PDF file: {args.local}")
@@ -124,38 +130,38 @@ def main():
         if not pdf_content:
             print("Failed to download PDF")
             exit(1)
-    
+
     # Check if PDF has changed, unless force flag is set
     if not args.force and not compare_pdf_content(pdf_content):
         print("Skipping processing as PDF has not changed")
         exit(0)
-    
+
     if args.name:
         # Single name processing
         name = args.name.strip()
         print(f"Processing schedule for: {name} {'(with family mode)' if args.family else ''}")
-        
+
         # Find the user's email from config
         user_email = None
         for user_name, family, mail in USERS:
             if user_name == name:
                 user_email = mail
                 break
-        
+
         ical_file = extract_and_create_ical(
-            pdf_content, 
-            name, 
-            SHIFTS, 
-            args.family, 
+            pdf_content,
+            name,
+            SHIFTS,
+            args.family,
             args.extend,
             args.extend_days
         )
-        
+
         if ical_file and not args.no_ftp:
             # Get changes for email notification BEFORE FTP upload
             old_file = os.path.join(os.path.dirname(ical_file), f"old_{os.path.basename(ical_file)}")
             changes, has_changes = compare_ics_files(ical_file, old_file)
-            
+
             if upload_to_ftp(ical_file) and user_email and args.mail:
                 if has_changes and changes:
                     send_mail(user_email, name, changes)
@@ -164,28 +170,28 @@ def main():
         if not USERS:
             print("No users found in configuration")
             exit(1)
-            
+
         print(f"Found {len(USERS)} users in configuration")
         for name, use_family, mail in USERS:
             print(f"\nProcessing schedule for: {name} {'(with family mode)' if use_family else ''}")
             ical_file = extract_and_create_ical(
-                pdf_content, 
-                name, 
-                SHIFTS, 
-                use_family, 
+                pdf_content,
+                name,
+                SHIFTS,
+                use_family,
                 args.extend,
                 args.extend_days
             )
-            
+
             if ical_file and not args.no_ftp:
                 # Get changes for email notification BEFORE FTP upload
                 old_file = os.path.join(os.path.dirname(ical_file), f"old_{os.path.basename(ical_file)}")
                 changes, has_changes = compare_ics_files(ical_file, old_file)
-                
+
                 if upload_to_ftp(ical_file) and mail and args.mail:
                     if has_changes and changes:
                         send_mail(mail, name, changes)
-        
+
         print(f"Sync complete for {len(USERS) if USERS else 0} users")
 
 if __name__ == "__main__":

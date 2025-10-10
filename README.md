@@ -203,6 +203,38 @@ schichtplan_sync/
 - No sensitive data is logged
 - PDF content is hashed for change detection
 
+### Securing FTP Hosted iCal Files
+
+When hosting iCal files on a web server via FTP, it's recommended to add security restrictions using `.htaccess`:
+
+1. **Copy the sample .htaccess file to your FTP server:**
+   ```bash
+   cp .htaccess.sample /path/to/your/ftp/directory/.htaccess
+   ```
+
+2. **Customize for your environment:**
+   - Add your IP address(es) to the allowed list
+   - Add calendar application user agents (Google Calendar, Apple Calendar, etc.)
+   - Optionally add password protection
+   - Test access from your calendar applications
+
+3. **The sample .htaccess includes (production-tested configuration):**
+   - **Block all non-.ics files** with 403 Forbidden
+   - **Allow Google Calendar** user agent
+   - **IP-based access control** for specific addresses
+   - **Default deny-all policy** with explicit allow list
+   - Optional HTTP Basic Authentication
+   - MIME type configuration
+   - Protection for hidden files
+
+4. **Common User-Agent strings for calendar apps:**
+   - Google Calendar: `.*Google-Calendar*`
+   - Apple Calendar: `.*CalendarAgent.*`
+   - Outlook: `.*Microsoft.*`
+   - Mozilla Lightning: `.*Lightning.*`
+
+**Note:** The `.htaccess.sample` file is based on real-world production usage and provides a secure starting point. Adjust based on your server configuration and security requirements.
+
 ## License
 
 MIT License - Copyright (c) 2025 Andras Gerendas

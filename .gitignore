@@ -10,6 +10,7 @@ venv/
 
 # Configuration (contains sensitive data)
 config.json
+.htaccess
 
 # Logs
 *.log
@@ -23,6 +24,7 @@ sync.log
 # IDE
 .vscode/
 .idea/
+.cursorrules
 *.swp
 *.swo
 

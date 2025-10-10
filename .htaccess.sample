@@ -1,0 +1,56 @@
+# .htaccess sample for securing remotely hosted iCal files
+# ============================================================================
+# USAGE NOTES
+# ============================================================================
+# 1. Copy this file to your FTP server directory as .htaccess
+# 2. Update the IP address(es) to match your network
+# 3. Test access from Google Calendar and your devices
+
+# ============================================================================
+# RECOMMENDED CONFIGURATION
+# ============================================================================
+
+RewriteEngine On
+
+# Block access to all non-.ics files with 403 Forbidden
+RewriteCond %{REQUEST_URI} !\.ics$ [NC]
+RewriteRule .* - [F,L]
+
+# Allow calendar applications to access the files (uncomment the ones you need)
+# SetEnvIf User-Agent .*Google-Calendar* ical
+# SetEnvIf User-Agent .*CalendarAgent.* ical
+# SetEnvIf User-Agent .*Microsoft.* ical
+# SetEnvIf User-Agent .*Lightning.* ical
+
+# Allow specific IP addresses (add your IPs here)
+# Example: Current Public IP for testing
+# SetEnvIf REMOTE_ADDR "^123\.123\.123\.123$" ical
+
+# IMPORTANT: You must uncomment at least one SetEnvIf line above to allow access!
+# Default deny all, allow only from trusted sources
+Order deny,allow
+Deny from all
+Allow from env=ical
+
+# Prevent directory browsing
+Options -Indexes
+
+# Set proper MIME type for iCal files
+AddType text/calendar .ics
+
+# Prevent access to hidden files (like .htaccess itself)
+<FilesMatch "^\.">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# ============================================================================
+# OPTIONAL: HTTP Basic Authentication
+# ============================================================================
+# If you want password protection in addition to IP restrictions:
+# AuthType Basic
+# AuthName "Calendar Access"
+# AuthUserFile /path/to/.htpasswd
+# Require valid-user
+# SetEnvIf Request_URI "\.ics$" allow_auth
+# Allow from env=allow_auth

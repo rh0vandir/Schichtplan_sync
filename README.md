@@ -33,7 +33,9 @@ A Python-based tool for automatically downloading, parsing, and syncing work sch
    ```bash
    ./setup_schichtplan_sync.sh
    ```
-
+3. **Set up Configuration in `config.json`**
+4. **Execute the Script manually once to set up credentials**
+   
 The setup script will:
 - Check for required dependencies (Python 3, pip3, Tesseract)
 - Create a virtual environment

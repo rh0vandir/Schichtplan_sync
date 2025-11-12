@@ -25,7 +25,7 @@ A Python-based tool for automatically downloading, parsing, and syncing work sch
 
 1. **Clone the repository:**
    ```bash
-   git clone git@github.com:rh0vandir/Schichtplan_sync.git
+   git clone https://github.com/rh0vandir/Schichtplan_sync.git
    cd schichtplan_sync
    ```
 

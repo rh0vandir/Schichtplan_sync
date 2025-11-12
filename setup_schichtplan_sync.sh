@@ -17,27 +17,126 @@ BLACK_ON_YELLOW='\033[7;33m'
 BOLD=$(tput bold)
 NORMAL=$(tput sgr0)
 
+run_with_privilege() {
+    if [ "$EUID" -ne 0 ]; then
+        if command -v sudo &> /dev/null; then
+            sudo "$@"
+        else
+            echo -e "${RED}Error: Administrator privileges are required to install packages.${NC}"
+            echo -e "Please rerun this script with sudo or as root."
+            return 1
+        fi
+    else
+        "$@"
+    fi
+}
+
+detect_package_manager() {
+    if command -v apt-get &> /dev/null; then
+        echo "apt"
+    elif command -v dnf &> /dev/null; then
+        echo "dnf"
+    elif command -v pacman &> /dev/null; then
+        echo "pacman"
+    elif command -v brew &> /dev/null; then
+        echo "brew"
+    else
+        echo "unknown"
+    fi
+}
+
+PACKAGE_MANAGER=$(detect_package_manager)
+APT_UPDATED=false
+
+install_package() {
+    local package_apt="$1"
+    local package_dnf="${2:-$1}"
+    local package_pacman="${3:-$1}"
+    local package_brew="${4:-$1}"
+    local package_to_install
+
+    case "$PACKAGE_MANAGER" in
+        apt)
+            package_to_install="$package_apt"
+            echo -e "${YELLOW}Attempting to install ${package_to_install} via apt-get...${NC}"
+            if [ "$APT_UPDATED" = false ]; then
+                run_with_privilege apt-get update || return 1
+                APT_UPDATED=true
+            fi
+            run_with_privilege apt-get install -y "$package_to_install"
+            ;;
+        dnf)
+            package_to_install="$package_dnf"
+            echo -e "${YELLOW}Attempting to install ${package_to_install} via dnf...${NC}"
+            run_with_privilege dnf install -y "$package_to_install"
+            ;;
+        pacman)
+            package_to_install="$package_pacman"
+            echo -e "${YELLOW}Attempting to install ${package_to_install} via pacman...${NC}"
+            run_with_privilege pacman -Sy --noconfirm "$package_to_install"
+            ;;
+        brew)
+            package_to_install="$package_brew"
+            echo -e "${YELLOW}Attempting to install ${package_to_install} via brew...${NC}"
+            brew install "$package_to_install"
+            ;;
+        *)
+            echo -e "${RED}Error: Unable to detect a supported package manager for automatic installation.${NC}"
+            return 1
+            ;;
+    esac
+}
+
+ensure_python3() {
+    if ! command -v python3 &> /dev/null; then
+        echo -e "${YELLOW}Python 3 is not installed. Installing...${NC}"
+        install_package "python3" "python3" "python" "python" || {
+            echo -e "${RED}Error: Failed to install Python 3 automatically.${NC}"
+            exit 1
+        }
+        if ! command -v python3 &> /dev/null; then
+            echo -e "${RED}Error: Python 3 installation did not complete successfully.${NC}"
+            exit 1
+        fi
+    fi
+}
+
+ensure_pip3() {
+    if ! command -v pip3 &> /dev/null; then
+        echo -e "${YELLOW}pip3 is not installed. Installing...${NC}"
+        install_package "python3-pip" "python3-pip" "python-pip" "python" || {
+            echo -e "${RED}Error: Failed to install pip3 automatically.${NC}"
+            exit 1
+        }
+        if ! command -v pip3 &> /dev/null; then
+            echo -e "${RED}Error: pip3 installation did not complete successfully.${NC}"
+            exit 1
+        fi
+    fi
+}
+
+ensure_tesseract() {
+    if ! command -v tesseract &> /dev/null; then
+        echo -e "${YELLOW}tesseract-ocr is not installed. Installing...${NC}"
+        install_package "tesseract-ocr" "tesseract" "tesseract" "tesseract" || {
+            echo -e "${RED}Error: Failed to install tesseract-ocr automatically.${NC}"
+            exit 1
+        }
+        if ! command -v tesseract &> /dev/null; then
+            echo -e "${RED}Error: tesseract-ocr installation did not complete successfully.${NC}"
+            exit 1
+        fi
+    fi
+}
+
 # Check if Python 3 is installed
-if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}Error: Python 3 is not installed${NC}"
-    exit 1
-fi
+ensure_python3
 
 # Check if pip is installed
-if ! command -v pip3 &> /dev/null; then
-    echo -e "${RED}Error: pip3 is not installed${NC}"
-    exit 1
-fi
+ensure_pip3
 
 # Check if tesseract-ocr is installed
-if ! command -v tesseract &> /dev/null; then
-    echo -e "${RED}Error: tesseract-ocr is not installed${NC}"
-    echo -e "Please install it using your package manager:"
-    echo -e "  Ubuntu/Debian: ${BOLD}sudo apt-get install tesseract-ocr${NORMAL}"
-    echo -e "  Fedora: ${BOLD}sudo dnf install tesseract${NORMAL}"
-    echo -e "  Arch Linux: ${BOLD}sudo pacman -S tesseract${NORMAL}"
-    exit 1
-fi
+ensure_tesseract
 
 # Check if virtual environment exists and is properly set up
 if [ -d "$SCRIPT_DIR/venv_schichtplan_sync" ]; then

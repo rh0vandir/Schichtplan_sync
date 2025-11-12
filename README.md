@@ -51,11 +51,16 @@ Edit `config.json` to configure the application. The configuration file is creat
 These settings **must** be configured before the application can function properly:
 
 #### `pdf_url` (string)
-The URL from which the PDF schedule is downloaded. Update this to point to your organization's schedule PDF.
+The source of the PDF schedule. This can be a remote URL (HTTP/HTTPS) or a path to a local file. When a local path is provided, the script reads the PDF directly and does not prompt for Schichtplan credentials.
 
 **Example:**
 ```json
 "pdf_url": "https://example.com/path/to/schedule.pdf"
+```
+
+**Local file example:**
+```json
+"pdf_url": "/home/user/Documents/schichtplan.pdf"
 ```
 
 #### `users` (object)

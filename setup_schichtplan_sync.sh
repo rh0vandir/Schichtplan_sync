@@ -90,7 +90,7 @@ install_package() {
 ensure_python3() {
     if ! command -v python3 &> /dev/null; then
         echo -e "${YELLOW}Python 3 is not installed. Installing...${NC}"
-        install_package "python3" "python3" "python" "python" || {
+        install_package "python3" "python3" "python" "python" "python3.12-venv" || {
             echo -e "${RED}Error: Failed to install Python 3 automatically.${NC}"
             exit 1
         }

@@ -10,6 +10,8 @@ import argparse
 import os
 import requests
 import hashlib
+from pathlib import Path
+from urllib.parse import urlparse
 from utils.mail_utils import send_mail
 from utils.pdf_processor import extract_and_create_ical
 from utils.ftp_uploader import upload_to_ftp, compare_ics_files
@@ -112,6 +114,8 @@ def main():
         args.extend_days = get_default_continuation_days()
 
 
+    pdf_content = None
+
     if args.local:
         try:
             print(f"Using local PDF file: {args.local}")
@@ -121,14 +125,35 @@ def main():
             print(f"Error reading local PDF file: {e}")
             exit(1)
     else:
-        username, password = get_credentials()
         pdf_url = get_pdf_url()
         if not pdf_url:
             print("Error: PDF URL not configured in config.json")
             exit(1)
-        pdf_content = download_pdf(pdf_url, username, password)
-        if not pdf_content:
-            print("Failed to download PDF")
+
+        parsed_url = urlparse(pdf_url)
+        if parsed_url.scheme in ('http', 'https'):
+            username, password = get_credentials()
+            pdf_content = download_pdf(pdf_url, username, password)
+        else:
+            local_path_str = parsed_url.path if parsed_url.scheme == 'file' else pdf_url
+            if parsed_url.scheme == 'file' and parsed_url.netloc:
+                local_path_str = f"//{parsed_url.netloc}{parsed_url.path}"
+            local_path = Path(local_path_str).expanduser()
+
+            if not local_path.is_file():
+                print(f"Error: Local PDF file not found at {local_path}")
+                exit(1)
+
+            try:
+                print(f"Using local PDF file from config: {local_path}")
+                with open(local_path, 'rb') as f:
+                    pdf_content = f.read()
+            except Exception as e:
+                print(f"Error reading local PDF file from config: {e}")
+                exit(1)
+
+        if pdf_content is None:
+            print("Failed to obtain PDF content")
             exit(1)
 
     # Check if PDF has changed, unless force flag is set

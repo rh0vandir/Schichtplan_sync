@@ -87,56 +87,54 @@ install_package() {
     esac
 }
 
-ensure_python3() {
+# Install dependencies
+if ! command -v python3 &> /dev/null; then
+    echo -e "${YELLOW}Python 3 is not installed. Installing...${NC}"
+    install_package "python3" "python3" "python" "python" || {
+        echo -e "${RED}Error: Failed to install Python 3 automatically.${NC}"
+        exit 1
+    }
     if ! command -v python3 &> /dev/null; then
-        echo -e "${YELLOW}Python 3 is not installed. Installing...${NC}"
-        install_package "python3" "python3" "python" "python" "python3.12-venv" || {
-            echo -e "${RED}Error: Failed to install Python 3 automatically.${NC}"
-            exit 1
-        }
-        if ! command -v python3 &> /dev/null; then
-            echo -e "${RED}Error: Python 3 installation did not complete successfully.${NC}"
-            exit 1
-        fi
+        echo -e "${RED}Error: Python 3 installation did not complete successfully.${NC}"
+        exit 1
     fi
-}
+fi
 
-ensure_pip3() {
+if ! command -v python3 &> /dev/null; then
+    echo -e "${YELLOW}Python 3 is not installed. Installing...${NC}"
+    install_package "python3.12-venv" || {
+        echo -e "${RED}Error: Failed to install Python 3 Venv automatically.${NC}"
+        exit 1
+    }
+    if ! command -v python3 &> /dev/null; then
+        echo -e "${RED}Error: Python 3 Venv installation did not complete successfully.${NC}"
+        exit 1
+    fi
+fi
+
+if ! command -v pip3 &> /dev/null; then
+    echo -e "${YELLOW}pip3 is not installed. Installing...${NC}"
+    install_package "python3-pip" "python3-pip" "python-pip" "python" || {
+        echo -e "${RED}Error: Failed to install pip3 automatically.${NC}"
+        exit 1
+    }
     if ! command -v pip3 &> /dev/null; then
-        echo -e "${YELLOW}pip3 is not installed. Installing...${NC}"
-        install_package "python3-pip" "python3-pip" "python-pip" "python" || {
-            echo -e "${RED}Error: Failed to install pip3 automatically.${NC}"
-            exit 1
-        }
-        if ! command -v pip3 &> /dev/null; then
-            echo -e "${RED}Error: pip3 installation did not complete successfully.${NC}"
-            exit 1
-        fi
+        echo -e "${RED}Error: pip3 installation did not complete successfully.${NC}"
+        exit 1
     fi
-}
+fi
 
-ensure_tesseract() {
+if ! command -v tesseract &> /dev/null; then
+    echo -e "${YELLOW}tesseract-ocr is not installed. Installing...${NC}"
+    install_package "tesseract-ocr" "tesseract" "tesseract" "tesseract" || {
+        echo -e "${RED}Error: Failed to install tesseract-ocr automatically.${NC}"
+        exit 1
+    }
     if ! command -v tesseract &> /dev/null; then
-        echo -e "${YELLOW}tesseract-ocr is not installed. Installing...${NC}"
-        install_package "tesseract-ocr" "tesseract" "tesseract" "tesseract" || {
-            echo -e "${RED}Error: Failed to install tesseract-ocr automatically.${NC}"
-            exit 1
-        }
-        if ! command -v tesseract &> /dev/null; then
-            echo -e "${RED}Error: tesseract-ocr installation did not complete successfully.${NC}"
-            exit 1
-        fi
+        echo -e "${RED}Error: tesseract-ocr installation did not complete successfully.${NC}"
+        exit 1
     fi
-}
-
-# Check if Python 3 is installed
-ensure_python3
-
-# Check if pip is installed
-ensure_pip3
-
-# Check if tesseract-ocr is installed
-ensure_tesseract
+fi
 
 # Check if virtual environment exists and is properly set up
 if [ -d "$SCRIPT_DIR/venv_schichtplan_sync" ]; then

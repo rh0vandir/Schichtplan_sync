@@ -25,7 +25,7 @@ A Python-based tool for automatically downloading, parsing, and syncing work sch
 
 1. **Clone the repository:**
    ```bash
-   git clone git@code.rhovandir.net:all-inkl/schichtplan_sync.git
+   git clone git@github.com:rh0vandir/Schichtplan_sync.git
    cd schichtplan_sync
    ```
 
@@ -33,7 +33,9 @@ A Python-based tool for automatically downloading, parsing, and syncing work sch
    ```bash
    ./setup_schichtplan_sync.sh
    ```
-
+3. **Set up Configuration in `config.json`**
+4. **Execute the Script manually once to set up credentials**
+   
 The setup script will:
 - Check for required dependencies (Python 3, pip3, Tesseract)
 - Create a virtual environment

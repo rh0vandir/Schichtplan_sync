@@ -9,6 +9,7 @@ A Python-based tool for automatically downloading, parsing, and syncing work sch
 - **Email Notifications**: Sends notifications when schedules change
 - **FTP Upload**: Automatically uploads generated iCal files to FTP server
 - **Encrypted Credentials**: Securely stores login credentials using Fernet encryption
+- **Credential Verification**: Test and refresh stored HTTP, FTP, and SMTP credentials before sync runs
 - **Flexible Configuration**: Supports custom shift definitions and user configurations
 - **Schedule Extension**: Automatically extends schedules using configurable patterns
 - **Change Detection**: Compares PDF content to avoid unnecessary processing
@@ -34,7 +35,7 @@ A Python-based tool for automatically downloading, parsing, and syncing work sch
    ./setup_schichtplan_sync.sh
    ```
 3. **Set up Configuration in `config.json`**
-4. **Execute the Script manually once to set up credentials**
+4. **Execute the Script manually once (or run a setup flag) to set up credentials**
    
 The setup script will:
 - Check for required dependencies (Python 3, pip3, Tesseract)
@@ -147,7 +148,22 @@ python3 schichtplan_sync.py --extend-days 180
 
 # Disable schedule extension
 python3 schichtplan_sync.py --no-extend
+
+# Verify or refresh credentials without processing
+python3 schichtplan_sync.py --setup-auth
+python3 schichtplan_sync.py --setup-ftp
+python3 schichtplan_sync.py --setup-smtp
 ```
+
+### Credential Setup & Verification
+
+Use the dedicated setup flags to prompt for new credentials (when missing) or verify the stored ones before running a full sync:
+
+- `--setup-auth`: Validates HTTP basic auth credentials for the configured `pdf_url`. Prompts when credentials are missing or on connection timeout.
+- `--setup-ftp`: Tests FTP connectivity and credentials. Prompts again automatically if the FTP connection times out.
+- `--setup-smtp`: Verifies the SMTP login used for email notifications. Prompts again automatically if the SMTP connection times out.
+
+When any of these flags are provided, the script exits immediately after verification succeeds or fails—no PDF processing is performed.
 
 ## Command Line Options
 
@@ -161,6 +177,9 @@ python3 schichtplan_sync.py --no-extend
 - `--extend`: Enable schedule extension using default pattern (default)
 - `--no-extend`: Disable schedule extension
 - `--extend-days`: Number of days to extend schedule (if not specified, uses config default_continuation_days value)
+- `--setup-auth`: Prompt for/verify HTTP credentials and exit
+- `--setup-ftp`: Prompt for/verify FTP credentials and exit
+- `--setup-smtp`: Prompt for/verify SMTP credentials and exit
 
 ## Calendar Integration
 

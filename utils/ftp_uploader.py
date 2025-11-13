@@ -1,10 +1,35 @@
 #!/usr/bin/env python3
 
 import os
+import socket
 from ftplib import FTP
 from icalendar import Calendar
 from typing import List, Tuple
 from .credentials_manager import get_ftp_credentials
+
+def verify_ftp_credentials() -> bool:
+    """Verify FTP credentials by attempting to connect and authenticate."""
+    force_prompt = False
+
+    for attempt in range(2):
+        try:
+            host, username, password = get_ftp_credentials(force_prompt=force_prompt)
+            with FTP(host, timeout=30) as ftp:
+                ftp.login(username, password)
+
+            print(f"FTP credentials verified for {host}")
+            return True
+        except (TimeoutError, socket.timeout) as e:
+            print(f"FTP connection timeout during verification: {e}")
+            if force_prompt:
+                return False
+            print("Prompting for FTP credentials again due to timeout...")
+            force_prompt = True
+        except Exception as e:
+            print(f"Error verifying FTP credentials: {e}")
+            return False
+
+    return False
 
 def compare_ics_files(new_file: str, old_file: str) -> Tuple[List[str], bool]:
     """Compare two ICS files and return a list of changes"""

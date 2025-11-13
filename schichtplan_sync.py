@@ -12,9 +12,9 @@ import requests
 import hashlib
 from pathlib import Path
 from urllib.parse import urlparse
-from utils.mail_utils import send_mail
+from utils.mail_utils import send_mail, verify_smtp_credentials
 from utils.pdf_processor import extract_and_create_ical
-from utils.ftp_uploader import upload_to_ftp, compare_ics_files
+from utils.ftp_uploader import upload_to_ftp, compare_ics_files, verify_ftp_credentials
 from utils.config_loader import load_config, get_default_continuation_days, get_pdf_url
 from utils.credentials_manager import get_credentials
 
@@ -70,6 +70,22 @@ def compare_pdf_content(new_pdf_content: bytes) -> bool:
 
     return True
 
+def verify_http_credentials(pdf_url: str):
+    """Verify HTTP basic authentication credentials for the configured PDF URL."""
+    username, password = get_credentials()
+    response = None
+    try:
+        response = requests.get(pdf_url, auth=(username, password), stream=True, timeout=30)
+        response.raise_for_status()
+        print("HTTP authentication credentials verified successfully")
+        return username, password
+    except requests.exceptions.RequestException as e:
+        print(f"Error verifying HTTP credentials: {e}")
+        return None, None
+    finally:
+        if response is not None:
+            response.close()
+
 def main():
     parser = argparse.ArgumentParser(
         description='Convert PDF schedule to iCal with shift continuation')
@@ -88,6 +104,12 @@ def main():
     parser.add_argument('--extend-days', metavar='INT', type=int, default=None,
                         help='Number of days to extend schedule '
                              '(if not specified, uses config default_continuation_days value)')
+    parser.add_argument('--setup-ftp', action='store_true',
+                        help='Prompt for and verify FTP credentials, then exit')
+    parser.add_argument('--setup-smtp', action='store_true',
+                        help='Prompt for and verify SMTP credentials, then exit')
+    parser.add_argument('--setup-auth', action='store_true',
+                        help='Prompt for and verify HTTP basic authentication credentials, then exit')
 
     args = parser.parse_args()
 
@@ -113,6 +135,61 @@ def main():
     if args.extend_days is None:
         args.extend_days = get_default_continuation_days()
 
+    setup_requested = args.setup_ftp or args.setup_smtp or args.setup_auth
+
+    pdf_url = None
+    parsed_url = None
+    http_credentials = None
+
+    if args.setup_auth:
+        pdf_url = get_pdf_url()
+        if not pdf_url:
+            print("Error: PDF URL not configured in config.json")
+            exit(1)
+        parsed_url = urlparse(pdf_url)
+        if parsed_url.scheme not in ('http', 'https'):
+            print("HTTP basic authentication setup requested, but configured PDF URL is not HTTP(S)")
+            exit(1)
+        http_credentials = verify_http_credentials(pdf_url)
+        if not all(http_credentials):
+            exit(1)
+
+    if args.setup_ftp:
+        if not verify_ftp_credentials():
+            exit(1)
+
+    if args.setup_smtp:
+        if not verify_smtp_credentials():
+            exit(1)
+
+    if setup_requested:
+        print("Credential setup completed successfully.")
+        exit(0)
+
+    if not args.local:
+        if not pdf_url:
+            pdf_url = get_pdf_url()
+            if not pdf_url:
+                print("Error: PDF URL not configured in config.json")
+                exit(1)
+        if not parsed_url:
+            parsed_url = urlparse(pdf_url)
+
+        if parsed_url.scheme in ('http', 'https'):
+            if not http_credentials:
+                http_credentials = verify_http_credentials(pdf_url)
+                if not all(http_credentials):
+                    exit(1)
+        else:
+            http_credentials = (None, None)
+
+    if not args.no_ftp:
+        if not verify_ftp_credentials():
+            exit(1)
+
+    if args.mail:
+        if not verify_smtp_credentials():
+            exit(1)
 
     pdf_content = None
 
@@ -125,14 +202,12 @@ def main():
             print(f"Error reading local PDF file: {e}")
             exit(1)
     else:
-        pdf_url = get_pdf_url()
-        if not pdf_url:
+        if not parsed_url:
             print("Error: PDF URL not configured in config.json")
             exit(1)
 
-        parsed_url = urlparse(pdf_url)
         if parsed_url.scheme in ('http', 'https'):
-            username, password = get_credentials()
+            username, password = http_credentials
             pdf_content = download_pdf(pdf_url, username, password)
         else:
             local_path_str = parsed_url.path if parsed_url.scheme == 'file' else pdf_url

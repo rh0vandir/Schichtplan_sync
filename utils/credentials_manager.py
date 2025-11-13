@@ -57,13 +57,14 @@ def get_credentials() -> Tuple[str, str]:
 
     return username, password
 
-def get_ftp_credentials() -> Tuple[str, str, str]:
+def get_ftp_credentials(force_prompt: bool = False) -> Tuple[str, str, str]:
     """Get FTP credentials from encrypted file or prompt user"""
     credentials_file = os.path.expanduser('~/.schichtplan_ftp_credentials')
     key_file = os.path.expanduser('~/.schichtplan_ftp_key')
 
     # Try to load existing credentials
-    if os.path.exists(credentials_file) and os.path.exists(key_file):
+    if (not force_prompt and
+            os.path.exists(credentials_file) and os.path.exists(key_file)):
         try:
             with open(key_file, 'rb') as f:
                 key = f.read()

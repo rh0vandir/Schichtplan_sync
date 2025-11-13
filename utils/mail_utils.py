@@ -8,19 +8,21 @@
 import os
 import smtplib
 import ssl
+import socket
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from cryptography.fernet import Fernet
 from getpass import getpass
 import argparse
 
-def get_smtp_credentials():
+def get_smtp_credentials(force_prompt: bool = False):
     """Get SMTP credentials from encrypted file or prompt user"""
     credentials_file = os.path.expanduser('~/.schichtplan_smtp_credentials')
     key_file = os.path.expanduser('~/.schichtplan_smtp_key')
 
     # Try to load existing credentials
-    if os.path.exists(credentials_file) and os.path.exists(key_file):
+    if (not force_prompt and
+            os.path.exists(credentials_file) and os.path.exists(key_file)):
         try:
             with open(key_file, 'rb') as f:
                 key = f.read()
@@ -68,6 +70,45 @@ def get_smtp_credentials():
             print(f"Warning: Could not save SMTP credentials: {e}")
 
         return smtp_host, smtp_port, smtp_user, smtp_pass
+
+def verify_smtp_credentials():
+    """Verify SMTP credentials by attempting to connect and authenticate."""
+    force_prompt = False
+
+    for attempt in range(2):
+        try:
+            smtp_host, smtp_port, smtp_user, smtp_pass = get_smtp_credentials(force_prompt=force_prompt)
+            if not all([smtp_host, smtp_port, smtp_user, smtp_pass]):
+                print("Failed to get SMTP credentials")
+                return False
+
+            context = ssl.create_default_context()
+
+            with smtplib.SMTP(smtp_host, int(smtp_port), timeout=30) as server:
+                server.set_debuglevel(0)
+                server.starttls(context=context)
+                server.login(smtp_user, smtp_pass)
+
+            print("SMTP credentials verified successfully")
+            return True
+
+        except (TimeoutError, socket.timeout) as e:
+            print(f"SMTP connection timeout during verification: {e}")
+            if force_prompt:
+                return False
+            print("Prompting for SMTP credentials again due to timeout...")
+            force_prompt = True
+        except smtplib.SMTPException as e:
+            print(f"SMTP verification error: {e}")
+            return False
+        except ssl.SSLError as e:
+            print(f"SMTP SSL verification error: {e}")
+            return False
+        except Exception as e:
+            print(f"Unexpected error verifying SMTP credentials: {e}")
+            return False
+
+    return False
 
 def send_mail(recipient_email, user_name, changes=None, subject=None, custom_body=None):
     """Send email notification about schedule changes or custom message"""
